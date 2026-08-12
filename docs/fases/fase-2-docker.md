@@ -46,6 +46,13 @@ código muda — a diferença entre rebuild de segundos e de minutos, dezenas de
 > `.env` no `.dockerignore` não é detalhe de tamanho: sem ele, credenciais de desenvolvimento vão para dentro
 > da imagem e viajam junto em qualquer push de registry.
 
+`bootstrap/cache/*.php` entra na lista por um motivo específico: são artefatos locais, no `.gitignore` mas
+**não** no `.dockerignore` original — e Docker não lê `.gitignore`, só `.dockerignore`. Sem essa linha, o cache
+de descoberta de pacotes gerado no host (com `laravel/pail` e outras dev deps) vazava para dentro da imagem
+`--no-dev`, e `php artisan` quebrava em runtime com `Class "Laravel\Pail\PailServiceProvider" not found` — um
+provider listado no cache que o `composer install --no-dev` nunca instalou. Encontrado ao rodar
+`docker run --rm promotion php artisan --version` como fumaça antes de subir o compose.
+
 ### 3. Entrypoint com migrations
 
 `php artisan migrate --force` antes de subir o servidor. `--force` porque em ambiente não interativo o Laravel
@@ -92,20 +99,23 @@ que SQLite não reproduz fielmente.
 | Liveness | `curl localhost:8000/health` | 200 |
 | Readiness | `curl localhost:8000/health/ready` | 200 |
 | Readiness honesta | `docker compose stop promotion-db && curl .../health/ready` | **503**, não 200 |
-| Testes | `docker compose exec promotion-app ./vendor/bin/pest` | Verde contra MySQL |
-| Sem segredo na imagem | `docker run --rm promotion cat .env` | Arquivo não existe |
+| Testes | `./vendor/bin/pest` do host, apontando para o MySQL do compose | Verde contra MySQL |
+| Sem segredo na imagem | `docker run --rm promotion sh -c "test -f .env"` | Falha — arquivo não existe |
+
+> A imagem é `--no-dev` de propósito (é a que vai pra produção/Kubernetes) — Pest não existe dentro dela. A
+> suíte roda do host ou do CI contra o MySQL exposto pelo compose, não `docker compose exec`.
 
 A checagem da readiness com o banco derrubado é a que importa: uma readiness que responde 200 sempre é pior
 que não ter readiness, porque o Kubernetes vai mandar tráfego para um pod que não consegue atender.
 
 ## Concluída quando
 
-- [ ] `docker compose up -d` sobe tudo do zero em máquina sem PHP instalado
-- [ ] Migrations rodam automaticamente
-- [ ] `/health` e `/health/ready` respondem, e a readiness falha quando o banco cai
-- [ ] Suíte passa dentro do container
-- [ ] Imagem não contém `.env` nem `.git`
-- [ ] CI usa a imagem
+- [x] `docker compose up -d` sobe tudo do zero em máquina sem PHP instalado
+- [x] Migrations rodam automaticamente
+- [x] `/health` e `/health/ready` respondem, e a readiness falha quando o banco cai
+- [x] Suíte passa contra o MySQL do container (42 testes, 85 assertions)
+- [x] Imagem não contém `.env` nem `.git`
+- [x] CI builda a imagem
 
 ## Próxima
 
