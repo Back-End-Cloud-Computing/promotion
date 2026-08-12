@@ -23,6 +23,10 @@ class Campanha extends Model
 
     protected $fillable = ['nome', 'descricao', 'inicia_em', 'termina_em', 'ativo'];
 
+    // O default do banco não hidrata o model em memória após um INSERT — sem
+    // isto, o JSON de resposta do POST mostra `ativo: null` até a próxima leitura.
+    protected $attributes = ['ativo' => true];
+
     protected function casts(): array
     {
         return [

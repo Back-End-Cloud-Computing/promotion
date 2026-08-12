@@ -33,6 +33,11 @@ class Cupom extends Model
         'codigo', 'tipo', 'valor', 'valor_minimo', 'limite_uso', 'usos', 'campanha_id', 'ativo',
     ];
 
+    // O default do banco não hidrata o model em memória após um INSERT — sem
+    // isto, o JSON de resposta do POST mostra `ativo: null`/`usos: null` até a
+    // próxima leitura.
+    protected $attributes = ['ativo' => true, 'usos' => 0, 'valor_minimo' => 0];
+
     protected function casts(): array
     {
         return [
