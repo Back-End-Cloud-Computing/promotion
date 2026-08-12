@@ -1,0 +1,10 @@
+{
+  "enabledMcpjsonServers": [
+    "context7",
+    "glyph",
+    "chrome-devtools",
+    "playwright",
+    "firecrawl"
+  ],
+  "model": "opus[1m]"
+}
