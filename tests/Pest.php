@@ -13,9 +13,10 @@ use Tests\TestCase;
 |
 */
 
-pest()->extend(TestCase::class)
- // ->use(Illuminate\Foundation\Testing\RefreshDatabase::class)
-    ->in('Feature');
+// Unit também estende TestCase: os testes não tocam o banco, mas instanciar um
+// Model com atributo datetime pede o grammar da conexão, que só existe com a
+// aplicação inicializada. Boot sem banco continua custando milissegundos.
+pest()->extend(TestCase::class)->in('Feature', 'Unit');
 
 /*
 |--------------------------------------------------------------------------
