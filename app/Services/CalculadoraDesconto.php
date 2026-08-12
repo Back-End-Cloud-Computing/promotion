@@ -125,7 +125,7 @@ class CalculadoraDesconto
     /**
      * @return array{0: int, 1: array<string, mixed>|null}
      */
-    private function resolverCupom(?Cupom $cupom, int $subtotalCentavos): array
+    public function resolverCupom(?Cupom $cupom, int $subtotalCentavos): array
     {
         if ($cupom === null) {
             return [0, null];
@@ -165,7 +165,7 @@ class CalculadoraDesconto
         return (int) round(((float) $valor) * 100);
     }
 
-    private function paraDecimal(int $centavos): string
+    public function paraDecimal(int $centavos): string
     {
         return number_format($centavos / 100, 2, '.', '');
     }

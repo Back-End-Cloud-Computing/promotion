@@ -124,14 +124,22 @@ class DescontoController extends Controller
             ]);
         }
 
-        $motivo = $this->calculadora->motivoDeRecusa($cupom, (int) round($subtotal * 100));
+        [$descontoCentavos, $resumo] = $this->calculadora->resolverCupom($cupom, (int) round($subtotal * 100));
 
-        return response()->json(array_filter([
-            'codigo' => $cupom->codigo,
-            'valido' => $motivo === null,
-            'tipo' => $cupom->tipo,
-            'valor' => $cupom->valor,
-            'motivo' => $motivo,
-        ], fn ($v) => $v !== null));
+        if (! $resumo['aplicado']) {
+            return response()->json([
+                'codigo' => $cupom->codigo,
+                'valido' => false,
+                'motivo' => $resumo['motivo'],
+            ]);
+        }
+
+        return response()->json([
+            'codigo' => $resumo['codigo'],
+            'valido' => true,
+            'tipo' => $resumo['tipo'],
+            'valor' => $resumo['valor'],
+            'desconto' => $this->calculadora->paraDecimal($descontoCentavos),
+        ]);
     }
 }
