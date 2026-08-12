@@ -86,3 +86,6 @@ jobs:
 
       - name: Testes (Pest)
         run: ./vendor/bin/pest
+
+      - name: Build da imagem Docker
+        run: docker build -t promotion .
