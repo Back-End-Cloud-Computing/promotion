@@ -21,7 +21,7 @@ class StoreCupomRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'codigo' => ['required', 'string', 'max:32', 'unique:cupons,codigo'],
+            'codigo' => ['required', 'string', 'max:32'],
             'tipo' => ['required', 'in:percentual,fixo'],
             'valor' => ['required', 'numeric', 'gt:0', $this->regraValorPercentual()],
             'valor_minimo' => ['nullable', 'numeric', 'min:0'],
