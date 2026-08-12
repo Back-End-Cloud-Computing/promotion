@@ -8,3 +8,16 @@ pre-commit:
     pint:
       glob: "*.php"
       run: ./vendor/bin/pint --dirty
+
+# Conventional Commits — padrão descrito em docs/convencoes.md.
+# Um grep resolve; commitlint traria Node e node_modules para um projeto PHP.
+commit-msg:
+  commands:
+    conventional:
+      run: |
+        head -1 {1} | grep -qE '^(feat|fix|refactor|perf|test|docs|build|ci|chore|style|revert)(\([a-z0-9-]+\))?!?: .{1,72}$' && exit 0
+        echo "Mensagem fora do padrão: tipo(escopo): resumo"
+        echo "Tipos: feat fix refactor perf test docs build ci chore style revert"
+        echo "Exemplo: feat(cupom): valida limite de uso"
+        echo "Detalhes em docs/convencoes.md"
+        exit 1
