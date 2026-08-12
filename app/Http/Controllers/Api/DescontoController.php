@@ -87,48 +87,24 @@ class DescontoController extends Controller
     }
 
     /**
-     * Resolve o percentual aplicável a cada produto: o maior entre a promoção
-     * individual e a campanha vigente da categoria.
+     * Percentual vigente de cada produto.
+     *
+     * O desconto é sempre o da promoção do próprio produto. Campanha agrupa e
+     * define vigência, mas não carrega percentual — então não existe "desconto
+     * de categoria" para disputar com o do produto. Derivar um a partir da maior
+     * promoção da categoria faria um produto de 30% ser cobrado a 40% só porque
+     * outro item da mesma categoria está mais barato.
      *
      * @param  array<int, int>  $produtoIds
      * @return array<int, int>
      */
     private function descontosPara(array $produtoIds): array
     {
-        $promocoes = Promocao::query()
+        return Promocao::query()
             ->vigente()
             ->whereIn('produto_id', $produtoIds)
-            ->get();
-
-        $descontoPorCategoria = $this->descontoPorCategoria();
-
-        $resultado = [];
-
-        foreach ($promocoes as $promocao) {
-            $resultado[$promocao->produto_id] = CalculadoraDesconto::maiorDesconto(
-                $promocao->desconto_pct,
-                $descontoPorCategoria[$promocao->categoria] ?? null,
-            );
-        }
-
-        return $resultado;
-    }
-
-    /**
-     * Maior desconto vigente por categoria, olhando as promoções que pertencem a
-     * uma campanha ativa.
-     *
-     * @return array<string, int>
-     */
-    private function descontoPorCategoria(): array
-    {
-        return Promocao::query()
-            ->where('ativo', true)
-            ->whereNotNull('campanha_id')
-            ->whereHas('campanha', fn ($q) => Campanha::aplicarVigencia($q))
-            ->get()
-            ->groupBy('categoria')
-            ->map(fn ($grupo) => (int) $grupo->max('desconto_pct'))
+            ->pluck('desconto_pct', 'produto_id')
+            ->map(fn ($pct) => (int) $pct)
             ->all();
     }
 

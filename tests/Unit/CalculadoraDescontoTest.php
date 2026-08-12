@@ -177,14 +177,6 @@ it('mantém preço cheio para produto sem promoção', function () {
         ->and($r['itens'][0]['preco_com_desconto'])->toBe('120.00');
 });
 
-// R16 — promoção individual e campanha na mesma categoria
-it('usa o maior desconto entre promoção e campanha, nunca a soma', function () {
-    expect(CalculadoraDesconto::maiorDesconto(20, 30))->toBe(30)
-        ->and(CalculadoraDesconto::maiorDesconto(40, 30))->toBe(40)
-        ->and(CalculadoraDesconto::maiorDesconto(20, null))->toBe(20)
-        ->and(CalculadoraDesconto::maiorDesconto(null, null))->toBe(0);
-});
-
 it('rejeita item com quantidade inválida', function () {
     (new CalculadoraDesconto)->calcular([item(1, '10.00', 0)], []);
 })->throws(InvalidArgumentException::class);
