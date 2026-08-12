@@ -10,23 +10,27 @@ use function Pest\Laravel\postJson;
 
 uses(RefreshDatabase::class);
 
-const SEGREDO = 'segredo-de-teste-com-32-caracteres-ok';
+// Baixa entropia de propósito: um segredo realista aqui dispara o gitleaks.
+function segredo(): string
+{
+    return str_repeat('a', 40);
+}
 
 beforeEach(function () {
     config([
-        'servico.jwt_secret' => SEGREDO,
+        'servico.jwt_secret' => segredo(),
         'servico.internal_secret' => 'segredo-interno-de-teste',
     ]);
 });
 
-function token(array $payload = [], string $segredo = SEGREDO): string
+function token(array $payload = [], ?string $segredo = null): string
 {
     return JWT::encode(array_merge([
         'id' => 1,
         'email' => 'user@ganjj.com',
         'isAdmin' => true,
         'exp' => time() + 3600,
-    ], $payload), $segredo, 'HS256');
+    ], $payload), $segredo ?? segredo(), 'HS256');
 }
 
 it('recusa rota admin sem token', function () {
@@ -36,7 +40,7 @@ it('recusa rota admin sem token', function () {
 });
 
 it('recusa token assinado com outro segredo', function () {
-    getJson('/api/cupons', ['Authorization' => 'Bearer '.token([], 'outro-segredo-de-32-caracteres-aqui')])
+    getJson('/api/cupons', ['Authorization' => 'Bearer '.token([], str_repeat('b', 40))])
         ->assertStatus(401)
         ->assertJson(['error' => 'Assinatura do token inválida']);
 });

@@ -26,8 +26,11 @@ class Cupom extends Model
 
     protected $table = 'cupons';
 
+    // `usos` é preenchível para as factories montarem cupons já consumidos; as
+    // rotas admin passam por FormRequest, que não valida o campo, então ele não
+    // entra por requisição.
     protected $fillable = [
-        'codigo', 'tipo', 'valor', 'valor_minimo', 'limite_uso', 'campanha_id', 'ativo',
+        'codigo', 'tipo', 'valor', 'valor_minimo', 'limite_uso', 'usos', 'campanha_id', 'ativo',
     ];
 
     protected function casts(): array
