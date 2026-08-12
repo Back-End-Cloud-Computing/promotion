@@ -1,0 +1,10 @@
+# Guarda local antes do commit. Depois de clonar: lefthook install
+# Pular uma vez: LEFTHOOK=0 git commit
+pre-commit:
+  parallel: true
+  commands:
+    gitleaks:
+      run: gitleaks protect --staged --no-banner
+    pint:
+      glob: "*.php"
+      run: ./vendor/bin/pint --dirty
