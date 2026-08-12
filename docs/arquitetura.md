@@ -168,7 +168,7 @@ camada extra:
 
 ```
 app/
-  Models/                        Domain — Eloquent, casts, scopes de vigência
+  Models/                        Domain + Repository — Eloquent (Active Record), casts, scopes
     Campanha.php
     Promocao.php
     Cupom.php
@@ -185,9 +185,29 @@ app/
       VerificaSegredoInterno.php
 ```
 
-**Sem camada Repository.** O Eloquent já é a abstração de persistência; um repositório por cima seria uma
-interface com uma implementação só — a definição de abstração especulativa. Se o professor cobrar Repository
-explicitamente, entra depois; é aditivo e não quebra nada.
+### Sobre a camada Repository
+
+A Aula 02 define o fluxo `Controller → Service → Repository → Domain → Banco`. Este projeto tem as quatro
+camadas — mas Domain e Repository ocupam o mesmo arquivo, e isso é consequência do framework, não descuido.
+
+O slide pressupõe **Spring Boot com JPA**, que implementa o padrão **Data Mapper**: a entidade é um objeto
+burro e um `Repository` separado sabe como carregá-la e gravá-la. São necessariamente duas classes.
+
+O Eloquent do Laravel implementa **Active Record**, o padrão oposto: o próprio Model carrega o mapeamento e
+as operações de persistência. `Cupom::where('codigo', $codigo)->first()` já *é* a chamada de repositório —
+`Cupom` é a entidade de domínio e o ponto de acesso a dados ao mesmo tempo.
+
+Envolver isso em um `CupomRepository` que apenas delega para o Eloquent produziria uma classe sem
+comportamento próprio, com uma única implementação, cuja única função seria parecer com Java. A camada não
+ganharia nada além de um arquivo a mais entre o Service e o dado.
+
+Onde o acesso a dados tem lógica de verdade — filtros compostos, a query de vigência, o incremento atômico do
+contador de uso — ela vive em **scopes** do Model (`scopeVigente`, `scopeAtivo`) e em `CupomService`. São os
+lugares que um Repository ocuparia; o nome é que difere.
+
+> Esta é a resposta para "cadê o Repository?" na apresentação: ele existe, fundido ao Domain, porque Active
+> Record e Data Mapper resolvem o mesmo problema com desenhos diferentes. Trocar de framework trocaria a
+> resposta.
 
 **Nem todo recurso precisa de Service.** Campanha e promoção são CRUD quase puro — Controller + Model resolvem.
 Só cupom e cálculo têm regra de negócio de verdade. A exigência acadêmica é que as três camadas existam e
