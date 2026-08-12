@@ -43,7 +43,7 @@ it('grava o código do cupom em maiúsculas', function () {
     expect(Cupom::first()->codigo)->toBe('INVERNO20');
 });
 
-// R12 — unicidade independente de caixa
+// R12 — unicidade independente de caixa, contra a constraint UNIQUE de verdade
 it('recusa cupom cujo código só difere na caixa', function () {
     Cupom::factory()->create(['codigo' => 'PROMO10']);
 
@@ -51,7 +51,9 @@ it('recusa cupom cujo código só difere na caixa', function () {
         'codigo' => 'promo10',
         'tipo' => 'percentual',
         'valor' => 10,
-    ], comoAdmin())->assertStatus(422);
+    ], comoAdmin())
+        ->assertStatus(409)
+        ->assertJson(['error' => 'Código de cupom já existe']);
 
     expect(Cupom::count())->toBe(1);
 });
