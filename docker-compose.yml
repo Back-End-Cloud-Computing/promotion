@@ -17,5 +17,24 @@ services:
       timeout: 5s
       retries: 10
 
+  promotion-app:
+    build: .
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      DB_CONNECTION: mysql
+      DB_HOST: promotion-db
+      DB_PORT: 3306
+      DB_DATABASE: promotion
+      DB_USERNAME: promotion
+      DB_PASSWORD: promotion
+      LOG_CHANNEL: stderr
+    ports:
+      - "8000:8000"
+    depends_on:
+      promotion-db:
+        condition: service_healthy
+
 volumes:
   promotion-db-data:
