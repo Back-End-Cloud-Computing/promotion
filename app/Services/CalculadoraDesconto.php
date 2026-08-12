@@ -76,15 +76,6 @@ class CalculadoraDesconto
     }
 
     /**
-     * Promoção individual e campanha da categoria não somam: some o maior dos dois.
-     * Somar transformaria dois mecanismos parecidos em desconto duplo acidental.
-     */
-    public static function maiorDesconto(?int $promocao, ?int $campanha): int
-    {
-        return max((int) $promocao, (int) $campanha);
-    }
-
-    /**
      * Devolve o motivo da recusa, ou null se o cupom pode ser aplicado.
      * O subtotal recebido já vem descontado pelas promoções.
      */

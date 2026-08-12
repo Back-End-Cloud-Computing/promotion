@@ -92,11 +92,23 @@ está fixada e testada.
 ### R15 — Produto sem promoção
 Passa com preço cheio, `desconto_pct: 0`. Não quebra, não some do resultado.
 
-### R16 — Promoção individual e campanha na mesma categoria
-Vale **o maior desconto entre os dois, nunca a soma**.
+### R16 — O desconto é sempre o do próprio produto
+Campanha agrupa promoções e define vigência, mas **não carrega percentual próprio**. Não existe "desconto de
+categoria" disputando com o do produto.
 
-> Dois mecanismos parecidos somando viram desconto duplo acidental — o tipo de bug que só aparece na fatura.
-> Teste: produto com promoção de 20% e campanha de 30% na categoria → aplica 30%, não 50%.
+> Esta regra nasceu errada. A primeira versão derivava um desconto de categoria a partir da maior promoção
+> daquela categoria e aplicava a todos os seus produtos — o que fazia um produto de 30% ser cobrado a 40% só
+> porque um vizinho de categoria estava mais barato. O teste original confirmava esse comportamento, porque foi
+> escrito olhando a implementação em vez da regra.
+>
+> O erro só apareceu ao conferir a resposta da API contra a conta feita à mão. É a razão de a verificação
+> manual estar na lista de checagens da Fase 1, e não é cerimônia: uma suíte verde pode estar provando que o
+> código faz consistentemente a coisa errada.
+>
+> Teste: dois produtos na mesma categoria e campanha, 40% e 10%. O de 10% paga 10%.
+
+Se um dia campanha precisar de desconto próprio, ela ganha uma coluna `desconto_pct` e a regra passa a ser o
+maior entre os dois — nunca a soma, que viraria desconto duplo acidental.
 
 ---
 
