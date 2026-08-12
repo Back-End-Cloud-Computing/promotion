@@ -228,8 +228,8 @@ Sem autenticação — são os alvos das probes do Kubernetes.
 
 Importa para quem for conferir o total, porque a ordem inversa dá resultado diferente:
 
-1. **Promoção do produto** incide sobre o preço unitário do item.
-2. Se o produto tem promoção individual **e** campanha vigente na categoria, vale **o maior desconto entre os
-   dois — nunca a soma**.
+1. **Promoção do produto** incide sobre o preço unitário do item. O percentual é sempre o da promoção daquele
+   produto — campanha define vigência, não desconto.
+2. Promoção cuja campanha não está vigente é ignorada, e o item sai com preço cheio.
 3. **Cupom** incide sobre o subtotal, já com as promoções aplicadas.
 4. O total nunca fica negativo: desconto maior que o subtotal resulta em zero.

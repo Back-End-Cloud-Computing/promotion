@@ -81,7 +81,8 @@ jobs:
         run: ./vendor/bin/pint --test
 
       - name: Análise estática (Larastan)
-        run: ./vendor/bin/phpstan analyse
+        # Larastan carrega o container do Laravel inteiro; o default de 128M não basta.
+        run: ./vendor/bin/phpstan analyse --memory-limit=1G
 
       - name: Testes (Pest)
         run: ./vendor/bin/pest
