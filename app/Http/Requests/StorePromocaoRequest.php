@@ -21,7 +21,7 @@ class StorePromocaoRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'produto_id' => ['required', 'integer', 'min:1', 'unique:promocoes,produto_id'],
+            'produto_id' => ['required', 'integer', 'min:1'],
             'desconto_pct' => ['required', 'integer', 'between:1,100'],
             'categoria' => ['required', 'in:Superiores,Inferiores,Inverno'],
             'campanha_id' => ['nullable', 'exists:campanhas,id'],

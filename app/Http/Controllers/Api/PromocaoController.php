@@ -7,6 +7,7 @@ use App\Http\Requests\StorePromocaoRequest;
 use App\Http\Requests\UpdatePromocaoRequest;
 use App\Http\Resources\PromocaoResource;
 use App\Models\Promocao;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -26,7 +27,17 @@ class PromocaoController extends Controller
 
     public function store(StorePromocaoRequest $request): JsonResponse
     {
-        $promocao = Promocao::create($request->validated());
+        // Mesmo motivo do CupomController: 409 é o contrato, e o teste precisa
+        // provar a constraint UNIQUE do banco, não uma validação da aplicação.
+        try {
+            $promocao = Promocao::create($request->validated());
+        } catch (QueryException $e) {
+            if ((string) $e->getCode() !== '23000') {
+                throw $e;
+            }
+
+            return response()->json(['error' => 'Produto já possui promoção'], 409);
+        }
 
         return PromocaoResource::make($promocao)
             ->response()

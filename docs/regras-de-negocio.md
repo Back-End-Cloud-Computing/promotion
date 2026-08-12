@@ -64,10 +64,18 @@ Código que não existe → recusado com motivo, sem exceção e sem 404. O cons
 > teste passar em um banco e falhar no outro.
 
 ### R12 — Unicidade de código
-Criar cupom com código já existente → 409.
+Criar cupom com código já existente → 409. Mesma regra vale para promoção: produto que já tem uma → 409.
 
 > Teste de feature, contra o banco real: prova que a constraint `UNIQUE` está lá, não só a validação da
 > aplicação.
+>
+> Nasceu quebrada: a primeira versão usava a regra `unique` do Laravel no FormRequest, que intercepta antes de
+> qualquer INSERT acontecer e devolve 422. O teste foi escrito contra esse 422 — verde, mas provando a
+> validação da aplicação, não a constraint do banco, que é exatamente o que este parágrafo dizia estar
+> testado. Achado ao testar `POST /api/promocoes` na mão contra a API viva: o contrato documentado promete 409
+> para os dois recursos, mas nenhum dos dois devolvia isso. Corrigido tirando a regra `unique` da validação e
+> deixando o `QueryException` da constraint virar 409 no controller — aí sim o teste exercita o banco de
+> verdade.
 
 ### R13 — Consumo concorrente não estoura o limite
 Duas requisições simultâneas no último uso disponível: uma passa, a outra recebe 409.
