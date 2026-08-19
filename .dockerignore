@@ -12,3 +12,4 @@ k8s
 bootstrap/cache/*.php
 storage/framework/*
 storage/logs/*
+database/*.sqlite
