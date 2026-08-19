@@ -12,6 +12,11 @@ RUN composer install --no-dev --no-scripts --no-interaction --optimize-autoloade
 
 COPY . .
 
+# storage/framework/* fica fora da imagem (.dockerignore, evita cache de dev vazando —
+# ver docs/fases/fase-2-docker.md). Isso também derruba os diretórios vazios que o
+# Laravel precisa pra compilar view Blade (ex.: a UI do Scramble em /docs/api).
+RUN mkdir -p storage/framework/sessions storage/framework/views storage/framework/cache/data bootstrap/cache
+
 COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
