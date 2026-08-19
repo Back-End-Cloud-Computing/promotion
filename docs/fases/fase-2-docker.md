@@ -108,6 +108,21 @@ que SQLite não reproduz fielmente.
 A checagem da readiness com o banco derrubado é a que importa: uma readiness que responde 200 sempre é pior
 que não ter readiness, porque o Kubernetes vai mandar tráfego para um pod que não consegue atender.
 
+## Addendum — OpenAPI e publicação de imagem
+
+Revisão comparativa com o `ms-task` (lab de outro curso, Spring Boot) achou dois itens que o checklist original
+desta fase não cobria: documentação da API e a imagem nunca sair do build local. Nenhum dos dois depende da
+aula de Kubernetes, então entram aqui em vez de esperar a Fase 3.
+
+- **`dedoc/scramble`** instalado. Gera a spec a partir dos `FormRequest`/type hints existentes, serve em
+  `/docs/api`. `api_path` default (`'api'`) já bate com o prefixo usado no projeto — `/internal/*` mora em
+  `routes/internal.php`, fora do prefixo `api`, então nunca aparece na doc pública. Acesso restrito por
+  `RestrictedDocsAccess`: livre só com `APP_ENV=local`, 403 fora disso a menos que a Gate `viewApiDocs` seja
+  definida — nenhuma config extra precisou ser escrita.
+- **Publicação da imagem no GHCR**, não Docker Hub. Job novo `publish` no `ci.yml`, roda só em push pra `main`
+  (nunca em PR), usa o `GITHUB_TOKEN` da própria Action — zero secret novo pra criar ou vazar. Tags:
+  `ghcr.io/back-end-cloud-computing/promotion:latest` e `:sha-<commit>`.
+
 ## Concluída quando
 
 - [x] `docker compose up -d` sobe tudo do zero em máquina sem PHP instalado
@@ -116,6 +131,8 @@ que não ter readiness, porque o Kubernetes vai mandar tráfego para um pod que 
 - [x] Suíte passa contra o MySQL do container (42 testes, 85 assertions)
 - [x] Imagem não contém `.env` nem `.git`
 - [x] CI builda a imagem
+- [x] `/docs/api` serve a spec OpenAPI gerada pelo Scramble
+- [x] CI publica a imagem versionada no GHCR a cada merge em `main`
 
 ## Próxima
 
