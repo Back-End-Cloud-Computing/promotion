@@ -6,5 +6,5 @@
     "playwright",
     "firecrawl"
   ],
-  "model": "opus[1m]"
+  "model": "claude-sonnet-5"
 }
