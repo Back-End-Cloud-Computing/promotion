@@ -1,12 +1,12 @@
 <?php
 
-namespace App\Http\Requests;
+namespace App\Domain\Campaigns\Requests;
 
 use App\Http\Requests\Concerns\RespondeComErroSimples;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
-class StoreCampanhaRequest extends FormRequest
+class StoreCampaignRequest extends FormRequest
 {
     use RespondeComErroSimples;
 
@@ -21,11 +21,11 @@ class StoreCampanhaRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'nome' => ['required', 'string', 'max:255'],
-            'descricao' => ['nullable', 'string'],
-            'inicia_em' => ['required', 'date'],
-            'termina_em' => ['required', 'date', 'after:inicia_em'],
-            'ativo' => ['sometimes', 'boolean'],
+            'name' => ['required', 'string', 'max:255'],
+            'description' => ['nullable', 'string'],
+            'starts_at' => ['required', 'date'],
+            'ends_at' => ['required', 'date', 'after:starts_at'],
+            'active' => ['sometimes', 'boolean'],
         ];
     }
 }
