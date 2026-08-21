@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Domain\Campaigns\Entities\Campaign;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -18,7 +19,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $usos
  * @property int|null $campanha_id
  * @property bool $ativo
- * @property-read Campanha|null $campanha
+ * @property-read Campaign|null $campanha
  */
 class Cupom extends Model
 {
@@ -63,7 +64,7 @@ class Cupom extends Model
 
     public function campanha(): BelongsTo
     {
-        return $this->belongsTo(Campanha::class);
+        return $this->belongsTo(Campaign::class);
     }
 
     /**
