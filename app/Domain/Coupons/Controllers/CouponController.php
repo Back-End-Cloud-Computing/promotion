@@ -3,6 +3,7 @@
 namespace App\Domain\Coupons\Controllers;
 
 use App\Domain\Coupons\Entities\Coupon;
+use App\Domain\Coupons\Exceptions\DuplicateCouponCodeException;
 use App\Domain\Coupons\Requests\StoreCouponRequest;
 use App\Domain\Coupons\Requests\UpdateCouponRequest;
 use App\Domain\Coupons\Resources\CouponResource;
@@ -32,7 +33,7 @@ class CouponController extends Controller
                 throw $e;
             }
 
-            return response()->json(['error' => 'Código de cupom já existe'], 409);
+            throw new DuplicateCouponCodeException('Código de cupom já existe');
         }
 
         return CouponResource::make($coupon)
