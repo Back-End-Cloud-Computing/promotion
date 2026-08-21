@@ -34,54 +34,54 @@ function token(array $payload = [], ?string $segredo = null): string
 }
 
 it('recusa rota admin sem token', function () {
-    getJson('/api/cupons')
+    getJson('/api/coupons')
         ->assertStatus(401)
         ->assertJson(['error' => 'Token de autenticação não fornecido']);
 });
 
 it('recusa token assinado com outro segredo', function () {
-    getJson('/api/cupons', ['Authorization' => 'Bearer '.token([], str_repeat('b', 40))])
+    getJson('/api/coupons', ['Authorization' => 'Bearer '.token([], str_repeat('b', 40))])
         ->assertStatus(401)
         ->assertJson(['error' => 'Assinatura do token inválida']);
 });
 
 it('recusa token expirado', function () {
-    getJson('/api/cupons', ['Authorization' => 'Bearer '.token(['exp' => time() - 60])])
+    getJson('/api/coupons', ['Authorization' => 'Bearer '.token(['exp' => time() - 60])])
         ->assertStatus(401)
         ->assertJson(['error' => 'Token expirado']);
 });
 
 it('recusa usuário sem privilégio de admin', function () {
-    getJson('/api/cupons', ['Authorization' => 'Bearer '.token(['isAdmin' => false])])
+    getJson('/api/coupons', ['Authorization' => 'Bearer '.token(['isAdmin' => false])])
         ->assertStatus(403)
         ->assertJson(['error' => 'Acesso restrito a administradores']);
 });
 
 it('aceita token de admin válido', function () {
-    getJson('/api/cupons', ['Authorization' => 'Bearer '.token()])->assertOk();
+    getJson('/api/coupons', ['Authorization' => 'Bearer '.token()])->assertOk();
 });
 
 it('aceita token enviado por cookie', function () {
     // Exercita o middleware direto: os helpers de cookie do TestCase não
     // repassam o cookie de forma confiável em rota sob /api.
-    $request = Request::create('/api/cupons', 'GET', cookies: ['accessToken' => token()]);
+    $request = Request::create('/api/coupons', 'GET', cookies: ['accessToken' => token()]);
 
-    $resposta = (new VerificaJwt)->handle($request, fn ($r) => response()->json([
+    $response = (new VerificaJwt)->handle($request, fn ($r) => response()->json([
         'usuario' => $r->attributes->get('usuario'),
     ]));
 
-    expect($resposta->getStatusCode())->toBe(200)
-        ->and(json_decode($resposta->getContent(), true)['usuario']['email'])->toBe('user@ganjj.com');
+    expect($response->getStatusCode())->toBe(200)
+        ->and(json_decode($response->getContent(), true)['usuario']['email'])->toBe('user@ganjj.com');
 });
 
 it('recusa rota interna sem o segredo compartilhado', function () {
-    postJson('/internal/descontos/calcular', ['itens' => []])
+    postJson('/internal/discounts/calculate', ['items' => []])
         ->assertStatus(403)
         ->assertJson(['error' => 'Segredo interno inválido']);
 });
 
 it('recusa rota interna com segredo errado', function () {
-    postJson('/internal/descontos/calcular', ['itens' => []], ['x-internal-secret' => 'errado'])
+    postJson('/internal/discounts/calculate', ['items' => []], ['x-internal-secret' => 'errado'])
         ->assertStatus(403);
 });
 

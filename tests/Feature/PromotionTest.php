@@ -1,6 +1,6 @@
 <?php
 
-use App\Models\Promocao;
+use App\Domain\Promotions\Entities\Promotion;
 use Firebase\JWT\JWT;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
@@ -12,7 +12,7 @@ beforeEach(function () {
     config(['servico.jwt_secret' => str_repeat('a', 40)]);
 });
 
-function comoAdminPromocao(): array
+function asAdminPromotion(): array
 {
     $token = JWT::encode(
         ['id' => 1, 'email' => 'admin@ganjj.com', 'isAdmin' => true, 'exp' => time() + 3600],
@@ -26,15 +26,15 @@ function comoAdminPromocao(): array
 // Mesma regra do cupom: unicidade é conflito (409), contra a constraint UNIQUE
 // de verdade — não validação de formato da aplicação.
 it('recusa promoção para produto que já tem uma', function () {
-    Promocao::factory()->create(['produto_id' => 1]);
+    Promotion::factory()->create(['product_id' => 1]);
 
-    postJson('/api/promocoes', [
-        'produto_id' => 1,
-        'desconto_pct' => 50,
-        'categoria' => 'Inverno',
-    ], comoAdminPromocao())
+    postJson('/api/promotions', [
+        'product_id' => 1,
+        'discount_percentage' => 50,
+        'category' => 'Inverno',
+    ], asAdminPromotion())
         ->assertStatus(409)
         ->assertJson(['error' => 'Produto já possui promoção']);
 
-    expect(Promocao::count())->toBe(1);
+    expect(Promotion::count())->toBe(1);
 });
