@@ -19,7 +19,7 @@ return new class extends Migration
             // Uma FK atravessando serviço e banco é impossível aqui, não esquecimento.
             $table->unsignedBigInteger('produto_id')->unique();
 
-            $table->foreignId('campanha_id')->nullable()->constrained('campanhas')->nullOnDelete();
+            $table->foreignId('campanha_id')->nullable()->constrained('campaigns')->nullOnDelete();
             $table->unsignedTinyInteger('desconto_pct');
             $table->enum('categoria', ['Superiores', 'Inferiores', 'Inverno']);
             $table->boolean('ativo')->default(true);
