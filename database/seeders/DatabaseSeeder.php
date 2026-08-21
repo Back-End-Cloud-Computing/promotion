@@ -2,9 +2,9 @@
 
 namespace Database\Seeders;
 
-use App\Models\Campanha;
-use App\Models\Cupom;
-use App\Models\Promocao;
+use App\Domain\Campaigns\Entities\Campaign;
+use App\Domain\Coupons\Entities\Coupon;
+use App\Domain\Promotions\Entities\Promotion;
 use Illuminate\Database\Seeder;
 
 /**
@@ -16,52 +16,52 @@ class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
-        $inverno = Campanha::create([
-            'nome' => 'Liquida Inverno',
-            'descricao' => 'Casacos e jaquetas com desconto.',
-            'inicia_em' => now()->subDays(5),
-            'termina_em' => now()->addDays(25),
-            'ativo' => true,
+        $winter = Campaign::create([
+            'name' => 'Liquida Inverno',
+            'description' => 'Casacos e jaquetas com desconto.',
+            'starts_at' => now()->subDays(5),
+            'ends_at' => now()->addDays(25),
+            'active' => true,
         ]);
 
-        $encerrada = Campanha::create([
-            'nome' => 'Black Friday do ano passado',
-            'inicia_em' => now()->subYear(),
-            'termina_em' => now()->subYear()->addDays(7),
-            'ativo' => true,
+        $ended = Campaign::create([
+            'name' => 'Black Friday do ano passado',
+            'starts_at' => now()->subYear(),
+            'ends_at' => now()->subYear()->addDays(7),
+            'active' => true,
         ]);
 
-        $promocoes = [
-            ['produto_id' => 1, 'desconto_pct' => 30, 'categoria' => 'Inverno', 'campanha_id' => $inverno->id],
-            ['produto_id' => 2, 'desconto_pct' => 40, 'categoria' => 'Inverno', 'campanha_id' => $inverno->id],
-            ['produto_id' => 3, 'desconto_pct' => 15, 'categoria' => 'Superiores', 'campanha_id' => null],
-            ['produto_id' => 4, 'desconto_pct' => 20, 'categoria' => 'Inferiores', 'campanha_id' => null],
+        $promotions = [
+            ['product_id' => 1, 'discount_percentage' => 30, 'category' => 'Inverno', 'campaign_id' => $winter->id],
+            ['product_id' => 2, 'discount_percentage' => 40, 'category' => 'Inverno', 'campaign_id' => $winter->id],
+            ['product_id' => 3, 'discount_percentage' => 15, 'category' => 'Superiores', 'campaign_id' => null],
+            ['product_id' => 4, 'discount_percentage' => 20, 'category' => 'Inferiores', 'campaign_id' => null],
             // Promoção presa a campanha encerrada: não deve aparecer em /api/sale.
-            ['produto_id' => 5, 'desconto_pct' => 70, 'categoria' => 'Superiores', 'campanha_id' => $encerrada->id],
-            ['produto_id' => 6, 'desconto_pct' => 25, 'categoria' => 'Superiores', 'ativo' => false],
+            ['product_id' => 5, 'discount_percentage' => 70, 'category' => 'Superiores', 'campaign_id' => $ended->id],
+            ['product_id' => 6, 'discount_percentage' => 25, 'category' => 'Superiores', 'active' => false],
         ];
 
-        foreach ($promocoes as $promocao) {
-            Promocao::create($promocao);
+        foreach ($promotions as $promotion) {
+            Promotion::create($promotion);
         }
 
-        $cupons = [
+        $coupons = [
             // Válido, sem restrição.
-            ['codigo' => 'BEMVINDO10', 'tipo' => 'percentual', 'valor' => 10],
+            ['code' => 'BEMVINDO10', 'type' => 'percentage', 'value' => 10],
             // Válido, de valor fixo.
-            ['codigo' => 'MENOS25', 'tipo' => 'fixo', 'valor' => 25],
+            ['code' => 'MENOS25', 'type' => 'fixed', 'value' => 25],
             // Recusa por valor mínimo.
-            ['codigo' => 'FRETE200', 'tipo' => 'percentual', 'valor' => 15, 'valor_minimo' => 200],
+            ['code' => 'FRETE200', 'type' => 'percentage', 'value' => 15, 'minimum_value' => 200],
             // Recusa por limite atingido.
-            ['codigo' => 'ESGOTADO', 'tipo' => 'percentual', 'valor' => 50, 'limite_uso' => 10, 'usos' => 10],
+            ['code' => 'ESGOTADO', 'type' => 'percentage', 'value' => 50, 'usage_limit' => 10, 'usage_count' => 10],
             // Recusa por estar inativo.
-            ['codigo' => 'DESLIGADO', 'tipo' => 'percentual', 'valor' => 30, 'ativo' => false],
+            ['code' => 'DESLIGADO', 'type' => 'percentage', 'value' => 30, 'active' => false],
             // Recusa por campanha encerrada.
-            ['codigo' => 'EXPIRADO', 'tipo' => 'percentual', 'valor' => 40, 'campanha_id' => $encerrada->id],
+            ['code' => 'EXPIRADO', 'type' => 'percentage', 'value' => 40, 'campaign_id' => $ended->id],
         ];
 
-        foreach ($cupons as $cupom) {
-            Cupom::create($cupom);
+        foreach ($coupons as $coupon) {
+            Coupon::create($coupon);
         }
     }
 }
