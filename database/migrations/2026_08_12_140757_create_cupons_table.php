@@ -27,7 +27,7 @@ return new class extends Migration
             $table->unsignedInteger('limite_uso')->nullable();
             $table->unsignedInteger('usos')->default(0);
 
-            $table->foreignId('campanha_id')->nullable()->constrained('campanhas')->nullOnDelete();
+            $table->foreignId('campanha_id')->nullable()->constrained('campaigns')->nullOnDelete();
             $table->boolean('ativo')->default(true);
             $table->timestamps();
         });

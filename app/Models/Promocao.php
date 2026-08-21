@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Domain\Campaigns\Entities\Campaign;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -14,7 +15,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $desconto_pct
  * @property string $categoria
  * @property bool $ativo
- * @property-read Campanha|null $campanha
+ * @property-read Campaign|null $campanha
  */
 class Promocao extends Model
 {
@@ -39,7 +40,7 @@ class Promocao extends Model
 
     public function campanha(): BelongsTo
     {
-        return $this->belongsTo(Campanha::class);
+        return $this->belongsTo(Campaign::class);
     }
 
     /**
@@ -54,12 +55,12 @@ class Promocao extends Model
         return $query->where('ativo', true)
             ->where(function (Builder $q) {
                 $q->whereNull('campanha_id')
-                    ->orWhereHas('campanha', fn (Builder $c) => Campanha::aplicarVigencia($c));
+                    ->orWhereHas('campanha', fn (Builder $c) => Campaign::applyValidityScope($c));
             });
     }
 
     public function estaVigente(): bool
     {
-        return $this->ativo && ($this->campanha === null || $this->campanha->estaVigente());
+        return $this->ativo && ($this->campanha === null || $this->campanha->isValid());
     }
 }
