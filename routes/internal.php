@@ -1,6 +1,5 @@
 <?php
 
-use App\Http\Controllers\Api\DescontoController;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 
@@ -14,10 +13,7 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::middleware('interno')->prefix('internal')->group(function () {
-    Route::post('descontos/calcular', [DescontoController::class, 'calcular']);
-    Route::post('cupons/{codigo}/consumir', [DescontoController::class, 'consumir']);
-});
+require __DIR__.'/../app/Domain/Discounts/routes/internal.php';
 
 /*
 |--------------------------------------------------------------------------

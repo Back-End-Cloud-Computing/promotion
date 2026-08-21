@@ -1,12 +1,12 @@
 <?php
 
-namespace App\Http\Requests;
+namespace App\Domain\Coupons\Requests;
 
 use App\Http\Requests\Concerns\RespondeComErroSimples;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
-class StoreCupomRequest extends FormRequest
+class StoreCouponRequest extends FormRequest
 {
     use RespondeComErroSimples;
 
@@ -21,13 +21,13 @@ class StoreCupomRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'codigo' => ['required', 'string', 'max:32'],
-            'tipo' => ['required', 'in:percentual,fixo'],
-            'valor' => ['required', 'numeric', 'gt:0', $this->regraValorPercentual()],
-            'valor_minimo' => ['nullable', 'numeric', 'min:0'],
-            'limite_uso' => ['nullable', 'integer', 'min:1'],
-            'campanha_id' => ['nullable', 'exists:campanhas,id'],
-            'ativo' => ['sometimes', 'boolean'],
+            'code' => ['required', 'string', 'max:32'],
+            'type' => ['required', 'in:percentage,fixed'],
+            'value' => ['required', 'numeric', 'gt:0', $this->percentageValueRule()],
+            'minimum_value' => ['nullable', 'numeric', 'min:0'],
+            'usage_limit' => ['nullable', 'integer', 'min:1'],
+            'campaign_id' => ['nullable', 'exists:campaigns,id'],
+            'active' => ['sometimes', 'boolean'],
         ];
     }
 
@@ -35,10 +35,10 @@ class StoreCupomRequest extends FormRequest
      * Cupom percentual acima de 100% não faz sentido de negócio. O tipo já é
      * obrigatório neste request, então basta ler o input diretamente.
      */
-    protected function regraValorPercentual(): \Closure
+    protected function percentageValueRule(): \Closure
     {
         return function (string $attribute, mixed $value, \Closure $fail): void {
-            if ($this->input('tipo') === 'percentual' && (float) $value > 100) {
+            if ($this->input('type') === 'percentage' && (float) $value > 100) {
                 $fail('O valor percentual não pode ser maior que 100.');
             }
         };

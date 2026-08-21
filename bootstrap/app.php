@@ -1,5 +1,6 @@
 <?php
 
+use App\Domain\Coupons\Exceptions\DuplicateCouponCodeException;
 use App\Http\Middleware\VerificaAdmin;
 use App\Http\Middleware\VerificaJwt;
 use App\Http\Middleware\VerificaSegredoInterno;
@@ -45,6 +46,10 @@ return Application::configure(basePath: dirname(__DIR__))
 
             if ($e instanceof NotFoundHttpException) {
                 return response()->json(['error' => 'Recurso não encontrado'], 404);
+            }
+
+            if ($e instanceof DuplicateCouponCodeException) {
+                return response()->json(['error' => $e->getMessage()], 409);
             }
 
             if ($e instanceof HttpExceptionInterface) {
