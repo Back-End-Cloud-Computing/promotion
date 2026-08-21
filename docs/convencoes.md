@@ -32,16 +32,16 @@ O escopo é opcional; o tipo, não.
 
 ### Escopos
 
-Domínio: `promocao` · `cupom` · `campanha` · `desconto`
+Domínio: `campaign` · `promotion` · `coupon` · `discount`
 Transversal: `api` · `db` · `auth` · `health`
 Infra: `docker` · `k8s` · `rabbitmq` · `deps`
 
 ### Exemplos
 
 ```
-feat(cupom): valida limite de uso e valor mínimo do carrinho
-fix(desconto): arredonda por item antes de somar o subtotal
-test(desconto): cobre promoção e cupom aplicados na mesma compra
+feat(coupon): valida limite de uso e valor mínimo do carrinho
+fix(discount): arredonda por item antes de somar o subtotal
+test(discount): cobre promoção e cupom aplicados na mesma compra
 refactor(api): achata erro de validação no formato {"error": ...}
 build(deps): adiciona firebase/php-jwt para verificar token
 ci: publica cobertura de testes no pipeline
@@ -51,7 +51,7 @@ docs: descreve o contrato do endpoint interno de cálculo
 Uma mudança que quebra contrato leva `!` antes dos dois-pontos:
 
 ```
-feat(api)!: renomeia desconto_pct para desconto_percentual
+feat(coupon)!: renomeia usage_limit para max_uses
 ```
 
 ### Por que o corpo importa
@@ -83,8 +83,14 @@ Título no mesmo formato do commit. PR via `gh pr create`.
 |---|---|
 | Commits, branches, PRs | Inglês |
 | Documentação e comentários | Português |
-| Identificadores de domínio | Português (`promocao`, `cupom`, `desconto_pct`) |
-| Identificadores de framework | Inglês, conforme convenção do Laravel |
+| Identificadores de código (classes, colunas, rotas, campos de JSON) | Inglês (`Coupon`, `discount_percentage`, `/api/coupons`) |
+| Valores do enum `category` | Português (`Superiores`, `Inferiores`, `Inverno`) |
+| Mensagens de erro e texto de negócio devolvido na API | Português (`"Cupom expirado"`) |
 
-A mistura é deliberada: o domínio é o do repo base da equipe, que já nomeia tudo
-em português, e a interoperabilidade entre os cinco serviços depende disso.
+Os identificadores de código eram em português (espelhando o repo base da equipe) até a reorganização em
+`app/Domain/<Module>` — nessa migração, código virou inglês. Duas exceções deliberadas continuam em
+português: os valores do enum `category`, porque espelham a categorização real do catálogo do serviço de
+Produto (outro microsserviço) e traduzir só o nosso lado quebraria o casamento em runtime; e as mensagens de
+erro/negócio devolvidas na API, que são texto para humano lerem, não identificador. `GET /api/sale` também
+foge à regra por completo — mantém rota e payload em português de propósito, para bater com o contrato do
+projeto de referência da equipe que este endpoint espelha.

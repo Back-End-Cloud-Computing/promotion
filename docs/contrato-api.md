@@ -8,7 +8,9 @@ ar.
 
 ## Convenções
 
-- Rotas públicas em **português**, para casar com o resto do sistema.
+- Rotas e payload em **inglês**, seguindo a reorganização do serviço em módulos (`app/Domain/<Module>`).
+  Exceção: os valores do enum `category` (`Superiores`/`Inferiores`/`Inverno`) ficam em português — espelham a
+  categorização real do catálogo do serviço de Produto (outro microsserviço), não um nome nosso.
 - Erro sempre `{"error": "mensagem"}`. Sem envelope de sucesso, sem paginação.
 - Dinheiro em string decimal com duas casas (`"49.90"`), nunca float no JSON.
 - Datas em ISO 8601.
@@ -42,6 +44,8 @@ ar.
 ### `GET /api/sale`
 
 Compatível com o contrato existente do repo base — mesmo shape, para que o consumidor atual não precise mudar.
+Única rota do serviço que mantém nomes de campo em português: é o único ponto que existe justamente para
+bater com o contrato antigo.
 
 Query: `?categoria=Superiores|Inferiores|Inverno` (opcional; `Todos` é tratado como ausente).
 
@@ -58,9 +62,9 @@ Query: `?categoria=Superiores|Inferiores|Inverno` (opcional; `Todos` é tratado 
 
 > Diferença em relação ao repo base: lá o endpoint fazia JOIN com `produto` e devolvia nome, preço e
 > `preco_sale` calculado. Aqui o catálogo vive em outro serviço, então este endpoint devolve **apenas os dados
-> da promoção**. Quem precisa do preço final chama `POST /internal/descontos/calcular` com os preços em mãos.
+> da promoção**. Quem precisa do preço final chama `POST /internal/discounts/calculate` com os preços em mãos.
 
-### `GET /api/cupons/{codigo}/validar`
+### `GET /api/coupons/{code}/validate`
 
 Consulta leve, sem consumir uso.
 
@@ -68,18 +72,18 @@ Query: `?subtotal=199.90`
 
 ```json
 {
-  "codigo": "INVERNO20",
-  "valido": true,
-  "tipo": "percentual",
-  "valor": "20.00",
-  "desconto": "39.98"
+  "code": "INVERNO20",
+  "valid": true,
+  "type": "percentage",
+  "value": "20.00",
+  "discount": "39.98"
 }
 ```
 
 Cupom recusado devolve **200**, não erro — com o motivo legível:
 
 ```json
-{ "codigo": "INVERNO20", "valido": false, "motivo": "Cupom expirado" }
+{ "code": "INVERNO20", "valid": false, "reason": "Cupom expirado" }
 ```
 
 Motivos possíveis: `Cupom não encontrado`, `Cupom inativo`, `Cupom expirado`, `Cupom ainda não vigente`,
@@ -91,55 +95,55 @@ Motivos possíveis: `Cupom não encontrado`, `Cupom inativo`, `Cupom expirado`, 
 
 Todas exigem JWT com `isAdmin: true`.
 
-### Promoções — `/api/promocoes`
+### Promoções — `/api/promotions`
 
 | Método | Rota | Descrição |
 |---|---|---|
-| `GET` | `/api/promocoes` | Lista. Filtros: `?categoria=&ativo=` |
-| `GET` | `/api/promocoes/{id}` | Detalhe |
-| `POST` | `/api/promocoes` | Cria |
-| `PUT` | `/api/promocoes/{id}` | Atualiza |
-| `DELETE` | `/api/promocoes/{id}` | Remove |
+| `GET` | `/api/promotions` | Lista. Filtros: `?category=&active=` |
+| `GET` | `/api/promotions/{id}` | Detalhe |
+| `POST` | `/api/promotions` | Cria |
+| `PUT` | `/api/promotions/{id}` | Atualiza |
+| `DELETE` | `/api/promotions/{id}` | Remove |
 
 ```json
 // POST request
-{ "produto_id": 42, "desconto_pct": 20, "categoria": "Superiores", "campanha_id": null }
+{ "product_id": 42, "discount_percentage": 20, "category": "Superiores", "campaign_id": null }
 
 // 201
-{ "id": 1, "produto_id": 42, "desconto_pct": 20, "categoria": "Superiores",
-  "campanha_id": null, "ativo": true, "created_at": "2026-08-12T14:00:00Z" }
+{ "id": 1, "product_id": 42, "discount_percentage": 20, "category": "Superiores",
+  "campaign_id": null, "active": true, "created_at": "2026-08-12T14:00:00Z" }
 ```
 
 Produto que já tem promoção → **409** `{"error": "Produto já possui promoção"}` (constraint `UNIQUE`).
 
-### Cupons — `/api/cupons`
+### Cupons — `/api/coupons`
 
 CRUD completo nos mesmos cinco verbos.
 
 ```json
 // POST request
 {
-  "codigo": "INVERNO20",
-  "tipo": "percentual",
-  "valor": 20,
-  "valor_minimo": 100,
-  "limite_uso": 500,
-  "campanha_id": 3
+  "code": "INVERNO20",
+  "type": "percentage",
+  "value": 20,
+  "minimum_value": 100,
+  "usage_limit": 500,
+  "campaign_id": 3
 }
 ```
 
-`codigo` é normalizado para maiúsculo antes de gravar — `inverno20` e `INVERNO20` são o mesmo cupom.
+`code` é normalizado para maiúsculo antes de gravar — `inverno20` e `INVERNO20` são o mesmo cupom.
 Duplicado → **409** `{"error": "Código de cupom já existe"}`.
 
-`tipo: "fixo"` faz `valor` ser reais (`"15.00"`); `tipo: "percentual"` faz `valor` ser porcentagem (1 a 100).
+`type: "fixed"` faz `value` ser reais (`"15.00"`); `type: "percentage"` faz `value` ser porcentagem (1 a 100).
 
-### Campanhas — `/api/campanhas`
+### Campanhas — `/api/campaigns`
 
 CRUD completo. É o guarda-chuva de vigência que promoções e cupons podem referenciar.
 
 ```json
-{ "nome": "Liquida Inverno 2026", "descricao": null,
-  "inicia_em": "2026-09-01T00:00:00Z", "termina_em": "2026-09-30T23:59:59Z" }
+{ "name": "Liquida Inverno 2026", "description": null,
+  "starts_at": "2026-09-01T00:00:00Z", "ends_at": "2026-09-30T23:59:59Z" }
 ```
 
 ---
@@ -148,7 +152,7 @@ CRUD completo. É o guarda-chuva de vigência que promoções e cupons podem ref
 
 Fora do API Gateway. Exige `x-internal-secret`; sem ele, **403**.
 
-### `POST /internal/descontos/calcular`
+### `POST /internal/discounts/calculate`
 
 **O endpoint principal para Carrinho e Pedido.** Recebe os itens com preço (o chamador já tem esse dado do
 serviço de Produto) e devolve o detalhamento do desconto.
@@ -156,11 +160,11 @@ serviço de Produto) e devolve o detalhamento do desconto.
 ```json
 // request
 {
-  "itens": [
-    { "produto_id": 1, "preco_unitario": 49.90, "quantidade": 2 },
-    { "produto_id": 7, "preco_unitario": 120.00, "quantidade": 1 }
+  "items": [
+    { "product_id": 1, "unit_price": 49.90, "quantity": 2 },
+    { "product_id": 7, "unit_price": 120.00, "quantity": 1 }
   ],
-  "cupom": "INVERNO20"
+  "coupon": "INVERNO20"
 }
 ```
 
@@ -168,16 +172,16 @@ serviço de Produto) e devolve o detalhamento do desconto.
 // 200
 {
   "subtotal": "219.80",
-  "desconto_promocoes": "29.94",
-  "desconto_cupom": "37.97",
+  "promotions_discount": "29.94",
+  "coupon_discount": "37.97",
   "total": "151.89",
-  "itens": [
-    { "produto_id": 1, "preco_unitario": "49.90", "quantidade": 2,
-      "desconto_pct": 30, "preco_com_desconto": "34.93", "subtotal": "69.86" },
-    { "produto_id": 7, "preco_unitario": "120.00", "quantidade": 1,
-      "desconto_pct": 0, "preco_com_desconto": "120.00", "subtotal": "120.00" }
+  "items": [
+    { "product_id": 1, "unit_price": "49.90", "quantity": 2,
+      "discount_percentage": 30, "discounted_price": "34.93", "subtotal": "69.86" },
+    { "product_id": 7, "unit_price": "120.00", "quantity": 1,
+      "discount_percentage": 0, "discounted_price": "120.00", "subtotal": "120.00" }
   ],
-  "cupom": { "codigo": "INVERNO20", "tipo": "percentual", "valor": "20.00", "aplicado": true }
+  "coupon": { "code": "INVERNO20", "type": "percentage", "value": "20.00", "applied": true }
 }
 ```
 
@@ -186,34 +190,34 @@ recusado — o usuário digitou um código errado, não fez uma requisição err
 
 ```json
 {
-  "subtotal": "219.80", "desconto_promocoes": "29.94", "desconto_cupom": "0.00",
+  "subtotal": "219.80", "promotions_discount": "29.94", "coupon_discount": "0.00",
   "total": "189.86",
-  "cupom": { "codigo": "INVERNO20", "aplicado": false, "motivo": "Cupom expirado" }
+  "coupon": { "code": "INVERNO20", "applied": false, "reason": "Cupom expirado" }
 }
 ```
 
-**422** fica reservado para erro de formato de verdade: item sem `preco_unitario`, quantidade negativa,
-`itens` vazio.
+**422** fica reservado para erro de formato de verdade: item sem `unit_price`, quantidade negativa,
+`items` vazio.
 
 Esta chamada **não consome** o uso do cupom — é idempotente e pode ser chamada a cada mudança do carrinho.
 
-### `POST /internal/cupons/{codigo}/consumir`
+### `POST /internal/coupons/{code}/consume`
 
-Incrementa `usos`. Chamado pelo **Pedido** no fechamento da compra, nunca pelo Carrinho.
+Incrementa `usage_count`. Chamado pelo **Pedido** no fechamento da compra, nunca pelo Carrinho.
 
 Separado do cálculo de propósito: se o consumo acontecesse na validação, todo preview de carrinho queimaria
 um uso e um cupom de 500 usos se esgotaria sem nenhuma venda.
 
 ```json
 // 200
-{ "codigo": "INVERNO20", "usos": 13, "limite_uso": 500 }
+{ "code": "INVERNO20", "usage_count": 13, "usage_limit": 500 }
 
 // 409 — limite estourou entre a validação e o fechamento
 { "error": "Limite de uso atingido" }
 ```
 
-O incremento é atômico (`UPDATE ... WHERE usos < limite_uso`), então duas compras simultâneas no último uso
-disponível não passam as duas.
+O incremento é atômico (`UPDATE ... WHERE usage_count < usage_limit`), então duas compras simultâneas no
+último uso disponível não passam as duas.
 
 ### `GET /health` e `GET /health/ready`
 
