@@ -20,29 +20,28 @@ escrito com teste primeiro.
 
 ### 1. Migrations e Models
 
-Três tabelas conforme [arquitetura.md](../arquitetura.md#modelo-de-dados): `campanhas`, `promocoes`, `cupons`.
+Três tabelas conforme [arquitetura.md](../arquitetura.md#modelo-de-dados): `campaigns`, `promotions`, `coupons`.
 
 ```bash
-php artisan make:model Campanha -m
-php artisan make:model Promocao -m
-php artisan make:model Cupom -m
+php artisan make:model Domain/Campaigns/Entities/Campaign -m
+php artisan make:model Domain/Promotions/Entities/Promotion -m
+php artisan make:model Domain/Coupons/Entities/Coupon -m
 ```
 
 Pontos que não são detalhe:
 
-- `produto_id` **sem foreign key** — o catálogo vive no MongoDB de outro serviço. Comentar o porquê na
+- `product_id` **sem foreign key** — o catálogo vive no MongoDB de outro serviço. Comentar o porquê na
   migration, senão parece esquecimento.
-- Dinheiro em `decimal(10,2)`, com cast `'decimal:2'` no Model. Nunca `float`.
-- `codigo` do cupom normalizado em maiúsculo por mutator no Model, **não** por collation do banco.
-- Scopes de vigência nos Models (`scopeVigente`, `scopeAtivo`) — é onde a comparação de data mora, em um lugar
-  só.
+- Dinheiro em `decimal(10,2)`, com cast `'decimal:2'` na Entity. Nunca `float`.
+- `code` do cupom normalizado em maiúsculo por mutator na Entity, **não** por collation do banco.
+- Scopes de vigência nas Entities (`scopeValid`) — é onde a comparação de data mora, em um lugar só.
 
-### 2. `CalculadoraDesconto` — com teste primeiro
+### 2. `DiscountCalculator` — com teste primeiro
 
-O coração do serviço. Classe pura em `app/Services/CalculadoraDesconto.php`: recebe itens e cupom opcional,
+O coração do serviço. Classe pura em `app/Domain/Discounts/Services/DiscountCalculator.php`: recebe itens e cupom opcional,
 devolve o detalhamento. Sem banco, sem HTTP, sem Eloquent.
 
-Escrever `tests/Unit/CalculadoraDescontoTest.php` **antes** da implementação, cobrindo os casos R1–R11 e
+Escrever `tests/Unit/DiscountCalculatorTest.php` **antes** da implementação, cobrindo os casos R1–R11 e
 R14–R16 de [regras-de-negocio.md](../regras-de-negocio.md).
 
 > Por que teste primeiro aqui e não no resto: é cálculo de dinheiro. Um erro de arredondamento não estoura —
@@ -55,18 +54,18 @@ calculadora só recebe.
 ### 3. CRUD dos três recursos
 
 ```bash
-php artisan make:controller Api/PromocaoController --api
-php artisan make:controller Api/CupomController --api
-php artisan make:controller Api/CampanhaController --api
-php artisan make:request StorePromocaoRequest      # e Update*, para os três
-php artisan make:resource PromocaoResource         # idem
+php artisan make:controller Domain/Promotions/Controllers/PromotionController --api
+php artisan make:controller Domain/Coupons/Controllers/CouponController --api
+php artisan make:controller Domain/Campaigns/Controllers/CampaignController --api
+php artisan make:request Domain/Promotions/Requests/StorePromotionRequest    # e Update*, para os três
+php artisan make:resource Domain/Promotions/Resources/PromotionResource     # idem
 ```
 
-Controllers finos: recebem FormRequest validado, chamam Model ou Service, devolvem Resource. Sem SQL, sem
+Controllers finos: recebem FormRequest validado, chamam Entity ou Service, devolvem Resource. Sem SQL, sem
 regra de negócio.
 
-Campanha e promoção são CRUD quase puro — Controller + Model bastam. Só cupom ganha `CupomService`, porque o
-consumo de uso tem transação e trava de concorrência.
+Campaign e Promotion são CRUD quase puro — Controller + Entity bastam. Só Coupon ganha `CouponService`, porque
+o consumo de uso tem transação e trava de concorrência.
 
 **Sobrescrever `failedValidation()`** nos FormRequests para achatar o erro do Laravel em `{"error": "..."}`,
 mantendo a convenção da equipe. Um trait compartilhado resolve para todos de uma vez.
@@ -86,10 +85,10 @@ O JWT é apenas verificado, nunca emitido — quem emite é o serviço de Client
 Conforme [contrato-api.md](../contrato-api.md):
 
 - `GET /api/sale?categoria=` — público, compatível com o repo base
-- `GET /api/cupons/{codigo}/validar?subtotal=` — público, não consome uso
+- `GET /api/coupons/{code}/validate?subtotal=` — público, não consome uso
 - CRUD admin dos três recursos
-- `POST /internal/descontos/calcular` — o endpoint que Carrinho e Pedido vão consumir
-- `POST /internal/cupons/{codigo}/consumir` — incremento atômico, chamado só pelo Pedido
+- `POST /internal/discounts/calculate` — o endpoint que Carrinho e Pedido vão consumir
+- `POST /internal/coupons/{code}/consume` — incremento atômico, chamado só pelo Pedido
 
 ### 6. Seeders
 

@@ -3,8 +3,8 @@
 Este é o documento que define o que o serviço **deve fazer com dinheiro**. Cada regra tem um caso de teste que
 prova que ela vale. Os testes vêm antes do código — é regra de negócio, cálculo e dinheiro.
 
-Implementação em `app/Services/CalculadoraDesconto.php`, testes em
-`tests/Unit/CalculadoraDescontoTest.php`.
+Implementação em `app/Domain/Discounts/Services/DiscountCalculator.php`, testes em
+`tests/Unit/DiscountCalculatorTest.php`.
 
 ## Cálculo e arredondamento
 
@@ -34,27 +34,27 @@ Desconto maior que o total resulta em zero, não em valor negativo.
 ## Cupom
 
 ### R5 — Expirado
-Campanha com `termina_em` no passado → recusado, motivo `Cupom expirado`.
+Campanha com `ends_at` no passado → recusado, motivo `Cupom expirado`.
 
 ### R6 — Ainda não vigente
-Campanha com `inicia_em` no futuro → recusado, motivo `Cupom ainda não vigente`.
+Campanha com `starts_at` no futuro → recusado, motivo `Cupom ainda não vigente`.
 
 > R5 e R6 comparam sempre com `Carbon::now()` em UTC, nunca com data em string. É onde bug de fuso se esconde.
 
 ### R7 — Limite de uso
-`usos >= limite_uso` → recusado. `limite_uso = null` significa ilimitado e nunca recusa.
+`usage_count >= usage_limit` → recusado. `usage_limit = null` significa ilimitado e nunca recusa.
 
 ### R8 — Valor mínimo
-`subtotal < valor_minimo` → recusado, com o valor exigido na mensagem.
+`subtotal < minimum_value` → recusado, com o valor exigido na mensagem.
 
 > O subtotal comparado é o **já descontado pelas promoções**, não o preço cheio.
 
 ### R9 — Inativo
-`ativo = false` → recusado, motivo `Cupom inativo`.
+`active = false` → recusado, motivo `Cupom inativo`.
 
 ### R10 — Inexistente
 Código que não existe → recusado com motivo, sem exceção e sem 404. O consumidor recebe 200 com
-`aplicado: false`.
+`applied: false`.
 
 ### R11 — Case-insensitive
 `inverno20`, `Inverno20` e `INVERNO20` são o mesmo cupom.
@@ -72,7 +72,7 @@ Criar cupom com código já existente → 409. Mesma regra vale para promoção:
 > Nasceu quebrada: a primeira versão usava a regra `unique` do Laravel no FormRequest, que intercepta antes de
 > qualquer INSERT acontecer e devolve 422. O teste foi escrito contra esse 422 — verde, mas provando a
 > validação da aplicação, não a constraint do banco, que é exatamente o que este parágrafo dizia estar
-> testado. Achado ao testar `POST /api/promocoes` na mão contra a API viva: o contrato documentado promete 409
+> testado. Achado ao testar `POST /api/promotions` na mão contra a API viva: o contrato documentado promete 409
 > para os dois recursos, mas nenhum dos dois devolvia isso. Corrigido tirando a regra `unique` da validação e
 > deixando o `QueryException` da constraint virar 409 no controller — aí sim o teste exercita o banco de
 > verdade.
@@ -82,7 +82,7 @@ Duas requisições simultâneas no último uso disponível: uma passa, a outra r
 
 > Garantido pela trava no próprio `UPDATE`:
 > ```sql
-> UPDATE cupons SET usos = usos + 1 WHERE id = ? AND (limite_uso IS NULL OR usos < limite_uso)
+> UPDATE coupons SET usage_count = usage_count + 1 WHERE id = ? AND (usage_limit IS NULL OR usage_count < usage_limit)
 > ```
 > Zero linhas afetadas significa limite estourado. Sem `SELECT ... FOR UPDATE`, sem lock de aplicação.
 
@@ -98,7 +98,7 @@ está fixada e testada.
 > o assert tenha valor.
 
 ### R15 — Produto sem promoção
-Passa com preço cheio, `desconto_pct: 0`. Não quebra, não some do resultado.
+Passa com preço cheio, `discount_percentage: 0`. Não quebra, não some do resultado.
 
 ### R16 — O desconto é sempre o do próprio produto
 Campanha agrupa promoções e define vigência, mas **não carrega percentual próprio**. Não existe "desconto de
@@ -115,7 +115,7 @@ categoria" disputando com o do produto.
 >
 > Teste: dois produtos na mesma categoria e campanha, 40% e 10%. O de 10% paga 10%.
 
-Se um dia campanha precisar de desconto próprio, ela ganha uma coluna `desconto_pct` e a regra passa a ser o
+Se um dia campanha precisar de desconto próprio, ela ganha uma coluna `discount_percentage` e a regra passa a ser o
 maior entre os dois — nunca a soma, que viraria desconto duplo acidental.
 
 ---
@@ -130,8 +130,8 @@ framework já vem testado.
 
 | Tipo | Onde | Contra o quê |
 |---|---|---|
-| R1–R11, R14–R16 | `tests/Unit/CalculadoraDescontoTest.php` | Nada — lógica pura, sem banco, instantâneo |
-| R12, R13 | `tests/Feature/CupomTest.php` | **MySQL real** em container |
+| R1–R11, R14–R16 | `tests/Unit/DiscountCalculatorTest.php` | Nada — lógica pura, sem banco, instantâneo |
+| R12, R13 | `tests/Feature/CouponTest.php` | **MySQL real** em container |
 
 R12 e R13 exigem banco de verdade de propósito: são sobre constraint e concorrência, exatamente o que o SQLite
 em memória não reproduz fielmente.
