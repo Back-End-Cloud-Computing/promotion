@@ -11,30 +11,30 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('cupons', function (Blueprint $table) {
+        Schema::create('coupons', function (Blueprint $table) {
             $table->id();
 
             // O Model normaliza para maiúsculo antes de gravar. A unicidade não pode
             // depender da collation: MySQL 8 é case-insensitive e SQLite não é, o que
             // faria este teste passar num banco e falhar no outro.
-            $table->string('codigo', 32)->unique();
+            $table->string('code', 32)->unique();
 
-            $table->enum('tipo', ['percentual', 'fixo']);
-            $table->decimal('valor', 10, 2);
-            $table->decimal('valor_minimo', 10, 2)->default(0);
+            $table->enum('type', ['percentage', 'fixed']);
+            $table->decimal('value', 10, 2);
+            $table->decimal('minimum_value', 10, 2)->default(0);
 
             // null = ilimitado
-            $table->unsignedInteger('limite_uso')->nullable();
-            $table->unsignedInteger('usos')->default(0);
+            $table->unsignedInteger('usage_limit')->nullable();
+            $table->unsignedInteger('usage_count')->default(0);
 
-            $table->foreignId('campanha_id')->nullable()->constrained('campaigns')->nullOnDelete();
-            $table->boolean('ativo')->default(true);
+            $table->foreignId('campaign_id')->nullable()->constrained('campaigns')->nullOnDelete();
+            $table->boolean('active')->default(true);
             $table->timestamps();
         });
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('cupons');
+        Schema::dropIfExists('coupons');
     }
 };
