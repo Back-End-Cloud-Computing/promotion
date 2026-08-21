@@ -1,11 +1,12 @@
 <?php
 
-use App\Http\Controllers\Api\CampanhaController;
 use App\Http\Controllers\Api\CupomController;
 use App\Http\Controllers\Api\DescontoController;
 use App\Http\Controllers\Api\PromocaoController;
 use App\Http\Controllers\Api\SaleController;
 use Illuminate\Support\Facades\Route;
+
+require __DIR__.'/../app/Domain/Campaigns/routes/api.php';
 
 /*
 |--------------------------------------------------------------------------
@@ -32,7 +33,4 @@ Route::middleware(['jwt', 'admin'])->group(function () {
 
     Route::apiResource('cupons', CupomController::class)
         ->parameters(['cupons' => 'cupom']);
-
-    Route::apiResource('campanhas', CampanhaController::class)
-        ->parameters(['campanhas' => 'campanha']);
 });
