@@ -2,10 +2,10 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Domain\Promotions\Entities\Promotion;
 use App\Http\Controllers\Controller;
 use App\Models\Campanha;
 use App\Models\Cupom;
-use App\Models\Promocao;
 use App\Services\CalculadoraDesconto;
 use App\Services\CupomService;
 use Illuminate\Http\JsonResponse;
@@ -100,10 +100,10 @@ class DescontoController extends Controller
      */
     private function descontosPara(array $produtoIds): array
     {
-        return Promocao::query()
-            ->vigente()
-            ->whereIn('produto_id', $produtoIds)
-            ->pluck('desconto_pct', 'produto_id')
+        return Promotion::query()
+            ->valid()
+            ->whereIn('product_id', $produtoIds)
+            ->pluck('discount_percentage', 'product_id')
             ->map(fn ($pct) => (int) $pct)
             ->all();
     }
