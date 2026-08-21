@@ -2,12 +2,10 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Domain\Coupons\Services\CouponService;
 use App\Domain\Promotions\Entities\Promotion;
 use App\Http\Controllers\Controller;
-use App\Models\Campanha;
-use App\Models\Cupom;
 use App\Services\CalculadoraDesconto;
-use App\Services\CupomService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
@@ -20,7 +18,7 @@ class DescontoController extends Controller
 {
     public function __construct(
         private readonly CalculadoraDesconto $calculadora,
-        private readonly CupomService $cupons,
+        private readonly CouponService $cupons,
     ) {}
 
     /**
@@ -47,7 +45,7 @@ class DescontoController extends Controller
         $resultado = $this->calculadora->calcular(
             $itens,
             $this->descontosPara(array_column($itens, 'produto_id')),
-            $codigo ? $this->cupons->buscar($codigo) : null,
+            $codigo ? $this->cupons->find($codigo) : null,
         );
 
         // Cupom informado que não existe não é erro de requisição: o usuário
@@ -69,20 +67,20 @@ class DescontoController extends Controller
      */
     public function consumir(string $codigo): JsonResponse
     {
-        $cupom = $this->cupons->buscar($codigo);
+        $cupom = $this->cupons->find($codigo);
 
         if ($cupom === null) {
             return response()->json(['error' => 'Cupom não encontrado'], 404);
         }
 
-        if (! $this->cupons->consumir($cupom)) {
+        if (! $this->cupons->consume($cupom)) {
             return response()->json(['error' => 'Limite de uso atingido'], 409);
         }
 
         return response()->json([
-            'codigo' => $cupom->codigo,
-            'usos' => $cupom->refresh()->usos,
-            'limite_uso' => $cupom->limite_uso,
+            'codigo' => $cupom->code,
+            'usos' => $cupom->refresh()->usage_count,
+            'limite_uso' => $cupom->usage_limit,
         ]);
     }
 
@@ -114,7 +112,7 @@ class DescontoController extends Controller
     public function validar(Request $request, string $codigo): JsonResponse
     {
         $subtotal = (float) $request->query('subtotal', '0');
-        $cupom = $this->cupons->buscar($codigo);
+        $cupom = $this->cupons->find($codigo);
 
         if ($cupom === null) {
             return response()->json([
@@ -128,7 +126,7 @@ class DescontoController extends Controller
 
         if (! $resumo['aplicado']) {
             return response()->json([
-                'codigo' => $cupom->codigo,
+                'codigo' => $cupom->code,
                 'valido' => false,
                 'motivo' => $resumo['motivo'],
             ]);

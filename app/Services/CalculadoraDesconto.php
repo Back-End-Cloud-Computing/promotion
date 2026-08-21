@@ -2,7 +2,8 @@
 
 namespace App\Services;
 
-use App\Models\Cupom;
+use App\Domain\Coupons\Entities\Coupon;
+use App\Domain\Coupons\Enums\CouponType;
 use InvalidArgumentException;
 
 /**
@@ -22,7 +23,7 @@ class CalculadoraDesconto
      * @param  array<int, int>  $descontoPorProduto  produto_id => percentual já resolvido
      * @return array<string, mixed>
      */
-    public function calcular(array $itens, array $descontoPorProduto, ?Cupom $cupom = null): array
+    public function calcular(array $itens, array $descontoPorProduto, ?Coupon $cupom = null): array
     {
         if ($itens === []) {
             throw new InvalidArgumentException('A lista de itens não pode ser vazia.');
@@ -79,41 +80,41 @@ class CalculadoraDesconto
      * Devolve o motivo da recusa, ou null se o cupom pode ser aplicado.
      * O subtotal recebido já vem descontado pelas promoções.
      */
-    public function motivoDeRecusa(Cupom $cupom, int $subtotalCentavos): ?string
+    public function motivoDeRecusa(Coupon $cupom, int $subtotalCentavos): ?string
     {
-        if (! $cupom->ativo) {
+        if (! $cupom->active) {
             return 'Cupom inativo';
         }
 
         // A calculadora não toca no banco. Se o cupom tem campanha e ela não veio
         // carregada, falha alto: ignorar em silêncio aceitaria cupom expirado.
-        if ($cupom->campanha_id !== null && ! $cupom->relationLoaded('campanha')) {
+        if ($cupom->campaign_id !== null && ! $cupom->relationLoaded('campaign')) {
             throw new InvalidArgumentException(
-                'Carregue a relação campanha antes de calcular: Cupom::with("campanha").'
+                'Carregue a relação campaign antes de calcular: Coupon::with("campaign").'
             );
         }
 
-        $campanha = $cupom->relationLoaded('campanha') ? $cupom->getRelation('campanha') : null;
+        $campanha = $cupom->relationLoaded('campaign') ? $cupom->getRelation('campaign') : null;
 
         if ($campanha !== null) {
-            if ($campanha->termina_em?->isPast()) {
+            if ($campanha->ends_at?->isPast()) {
                 return 'Cupom expirado';
             }
 
-            if ($campanha->inicia_em?->isFuture()) {
+            if ($campanha->starts_at?->isFuture()) {
                 return 'Cupom ainda não vigente';
             }
 
-            if (! $campanha->ativo) {
+            if (! $campanha->active) {
                 return 'Cupom inativo';
             }
         }
 
-        if ($cupom->atingiuLimite()) {
+        if ($cupom->hasReachedLimit()) {
             return 'Limite de uso atingido';
         }
 
-        $minimo = $this->paraCentavos($cupom->valor_minimo ?? 0);
+        $minimo = $this->paraCentavos($cupom->minimum_value ?? 0);
 
         if ($subtotalCentavos < $minimo) {
             return sprintf('Valor mínimo de R$ %s não atingido', number_format($minimo / 100, 2, ',', '.'));
@@ -125,25 +126,25 @@ class CalculadoraDesconto
     /**
      * @return array{0: int, 1: array<string, mixed>|null}
      */
-    public function resolverCupom(?Cupom $cupom, int $subtotalCentavos): array
+    public function resolverCupom(?Coupon $cupom, int $subtotalCentavos): array
     {
         if ($cupom === null) {
             return [0, null];
         }
 
         $base = [
-            'codigo' => $cupom->codigo,
-            'tipo' => $cupom->tipo,
-            'valor' => $this->paraDecimal($this->paraCentavos($cupom->valor)),
+            'codigo' => $cupom->code,
+            'tipo' => $cupom->type,
+            'valor' => $this->paraDecimal($this->paraCentavos($cupom->value)),
         ];
 
         if ($motivo = $this->motivoDeRecusa($cupom, $subtotalCentavos)) {
             return [0, $base + ['aplicado' => false, 'motivo' => $motivo]];
         }
 
-        $desconto = $cupom->tipo === 'percentual'
-            ? $subtotalCentavos - $this->aplicarPercentual($subtotalCentavos, (int) $cupom->valor)
-            : $this->paraCentavos($cupom->valor);
+        $desconto = $cupom->type === CouponType::Percentage
+            ? $subtotalCentavos - $this->aplicarPercentual($subtotalCentavos, (int) $cupom->value)
+            : $this->paraCentavos($cupom->value);
 
         // Desconto maior que o subtotal zera o total em vez de deixá-lo negativo.
         $desconto = min($desconto, $subtotalCentavos);
