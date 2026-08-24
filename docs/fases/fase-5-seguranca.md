@@ -16,15 +16,21 @@ não de construção.
 
 ## Tarefas
 
-### 1. Alinhar o JWT com o serviço de Cliente
+### 1. Alinhar o JWT com o serviço de Autorização
 
-A verificação de JWT existe desde a Fase 1. O que a aula de 20/10 permite é conferir contra a implementação
-real do Eduardo:
+> **Atualização (24/08):** as suposições abaixo eram do repo base e **não batem** com o que o serviço de
+> Autorização emite de verdade — não é só o segredo, o algoritmo e o formato do claim também mudaram. Detalhe
+> completo e plano técnico em [alinhamento-jwt-rs256.md](../alinhamento-jwt-rs256.md), pendente de confirmação
+> com o time de Autorização antes de implementar.
 
-- O `JWT_SECRET` é o mesmo dos dois lados.
-- O payload é mesmo `{id, email, isAdmin}` — o repo base usa esse formato, mas o serviço novo pode ter mudado.
-- O algoritmo bate (HS256 é o padrão; verificar não é paranoia).
-- Token expirado devolve 401 com mensagem clara, não 500.
+A verificação de JWT existe desde a Fase 1, mas com um contrato hipotético. O que descobrimos até agora:
+
+- ~~O `JWT_SECRET` é o mesmo dos dois lados.~~ Não existe segredo simétrico — Autorização assina com RS256
+  (par de chaves), `promotion` precisa buscar a chave pública via JWKS.
+- ~~O payload é mesmo `{id, email, isAdmin}`.~~ O payload real é `{sub, email, role}` — `role` é string, não
+  o booleano `isAdmin` que o código assume hoje.
+- ~~O algoritmo bate (HS256).~~ É RS256.
+- Token expirado devolve 401 com mensagem clara, não 500 — isso continua valendo e já está coberto.
 
 > **Nunca aceitar `alg: none`.** É a falha clássica de JWT: uma biblioteca mal configurada aceita um token sem
 > assinatura e qualquer pessoa vira admin. A `firebase/php-jwt` exige o algoritmo explícito no `decode()`, o
@@ -96,7 +102,7 @@ serviço e o porquê de cada uma estão em [arquitetura.md](../arquitetura.md) �
 | JWT real | Token emitido pelo serviço do Eduardo | Aceito |
 | Token adulterado | Alterar o payload e reenviar | 401 |
 | Token expirado | Token vencido | 401 com mensagem clara |
-| Sem admin | Token válido, `isAdmin: false`, em rota admin | 403 |
+| Sem admin | Token válido, `role` diferente de `admin`, em rota admin | 403 |
 | `/internal` de fora | Chamar pelo Ingress público | Inalcançável |
 | Debug | `curl` numa rota com erro proposital | Sem stack trace |
 | Métricas | `curl .../metrics` | Formato Prometheus válido |
