@@ -81,6 +81,8 @@ function jwtTestToken(array $payload = [], ?string $privateKey = null): string
         'sub' => '1',
         'email' => 'user@ganjj.com',
         'role' => 'ADMIN',
+        'iss' => 'ganjj-authorization',
+        'typ' => 'access',
         'exp' => time() + 3600,
     ], $payload), $privateKey ?? jwtTestKeyPair()[0], 'RS256');
 }

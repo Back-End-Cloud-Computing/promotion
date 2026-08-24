@@ -36,7 +36,7 @@ class PromotionController extends Controller
                 throw $e;
             }
 
-            return response()->json(['error' => 'Produto já possui promoção'], 409);
+            return response()->error(409, 'Produto já possui promoção');
         }
 
         return PromotionResource::make($promotion)
