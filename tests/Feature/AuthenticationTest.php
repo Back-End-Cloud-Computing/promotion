@@ -1,7 +1,6 @@
 <?php
 
 use App\Http\Middleware\VerifyJwt;
-use Firebase\JWT\JWT;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Request;
 
@@ -10,28 +9,12 @@ use function Pest\Laravel\postJson;
 
 uses(RefreshDatabase::class);
 
-// Baixa entropia de propósito: um segredo realista aqui dispara o gitleaks.
-function segredo(): string
-{
-    return str_repeat('a', 40);
-}
-
 beforeEach(function () {
     config([
-        'service.jwt_secret' => segredo(),
+        'service.jwt_public_key' => jwtTestPublicKey(),
         'service.internal_secret' => 'segredo-interno-de-teste',
     ]);
 });
-
-function token(array $payload = [], ?string $segredo = null): string
-{
-    return JWT::encode(array_merge([
-        'id' => 1,
-        'email' => 'user@ganjj.com',
-        'isAdmin' => true,
-        'exp' => time() + 3600,
-    ], $payload), $segredo ?? segredo(), 'HS256');
-}
 
 it('recusa rota admin sem token', function () {
     getJson('/api/coupons')
@@ -39,32 +22,37 @@ it('recusa rota admin sem token', function () {
         ->assertJson(['error' => 'Token de autenticação não fornecido']);
 });
 
-it('recusa token assinado com outro segredo', function () {
-    getJson('/api/coupons', ['Authorization' => 'Bearer '.token([], str_repeat('b', 40))])
+it('recusa token assinado por outra chave', function () {
+    openssl_pkey_export(
+        openssl_pkey_new(['private_key_bits' => 2048, 'private_key_type' => OPENSSL_KEYTYPE_RSA]),
+        $outraChavePrivada
+    );
+
+    getJson('/api/coupons', ['Authorization' => 'Bearer '.jwtTestToken([], $outraChavePrivada)])
         ->assertStatus(401)
         ->assertJson(['error' => 'Assinatura do token inválida']);
 });
 
 it('recusa token expirado', function () {
-    getJson('/api/coupons', ['Authorization' => 'Bearer '.token(['exp' => time() - 60])])
+    getJson('/api/coupons', ['Authorization' => 'Bearer '.jwtTestToken(['exp' => time() - 60])])
         ->assertStatus(401)
         ->assertJson(['error' => 'Token expirado']);
 });
 
 it('recusa usuário sem privilégio de admin', function () {
-    getJson('/api/coupons', ['Authorization' => 'Bearer '.token(['isAdmin' => false])])
+    getJson('/api/coupons', ['Authorization' => 'Bearer '.jwtTestToken(['role' => 'customer'])])
         ->assertStatus(403)
         ->assertJson(['error' => 'Acesso restrito a administradores']);
 });
 
 it('aceita token de admin válido', function () {
-    getJson('/api/coupons', ['Authorization' => 'Bearer '.token()])->assertOk();
+    getJson('/api/coupons', ['Authorization' => 'Bearer '.jwtTestToken()])->assertOk();
 });
 
 it('aceita token enviado por cookie', function () {
     // Exercita o middleware direto: os helpers de cookie do TestCase não
     // repassam o cookie de forma confiável em rota sob /api.
-    $request = Request::create('/api/coupons', 'GET', cookies: ['accessToken' => token()]);
+    $request = Request::create('/api/coupons', 'GET', cookies: ['accessToken' => jwtTestToken()]);
 
     $response = (new VerifyJwt)->handle($request, fn ($r) => response()->json([
         'user' => $r->attributes->get('user'),
@@ -72,6 +60,14 @@ it('aceita token enviado por cookie', function () {
 
     expect($response->getStatusCode())->toBe(200)
         ->and(json_decode($response->getContent(), true)['user']['email'])->toBe('user@ganjj.com');
+});
+
+it('recusa quando JWT_PUBLIC_KEY não está configurada', function () {
+    config(['service.jwt_public_key' => null]);
+
+    getJson('/api/coupons', ['Authorization' => 'Bearer '.jwtTestToken()])
+        ->assertStatus(500)
+        ->assertJson(['error' => 'Serviço sem JWT_PUBLIC_KEY configurado']);
 });
 
 it('recusa rota interna sem o segredo compartilhado', function () {
