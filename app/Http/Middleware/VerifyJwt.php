@@ -47,7 +47,7 @@ class VerifyJwt
         $request->attributes->set('user', [
             'id' => $payload->sub ?? null,
             'email' => $payload->email ?? null,
-            'isAdmin' => ($payload->role ?? null) === 'admin',
+            'isAdmin' => ($payload->role ?? null) === 'ADMIN',
         ]);
 
         return $next($request);

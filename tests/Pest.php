@@ -80,7 +80,7 @@ function jwtTestToken(array $payload = [], ?string $privateKey = null): string
     return JWT::encode(array_merge([
         'sub' => '1',
         'email' => 'user@ganjj.com',
-        'role' => 'admin',
+        'role' => 'ADMIN',
         'exp' => time() + 3600,
     ], $payload), $privateKey ?? jwtTestKeyPair()[0], 'RS256');
 }
