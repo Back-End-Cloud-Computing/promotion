@@ -19,17 +19,15 @@ lados divergem em algoritmo **e** em formato de claim — não é só o segredo 
 
 ## O que precisamos confirmar com o time de Autorização
 
-- [ ] **A chave pública em si.** RS256 exige a chave pública pra verificar assinatura. Decisão: cola direto
-  como var de ambiente (`JWT_PUBLIC_KEY`, PEM), sem endpoint JWKS — mais simples, sem chamada de rede por
-  request. Falta o valor real. Se o time confirmar rotação de chave ativa, revisitamos essa decisão (aí faria
-  sentido JWKS de verdade).
+- [ ] **URL do JWKS.** RS256 exige a chave pública pra verificar assinatura — vamos buscar via endpoint JWKS
+  (não copiar um `.pem` fixo em env, pra sobreviver a rotação de chave). Falta o endereço real.
 - [ ] **Confirmar os nomes exatos dos claims** — `sub`/`email`/`role` como observado, ou há variação (`roles`
   no plural, namespace tipo `https://.../role`, etc.)?
 - [ ] **Confirmar os valores possíveis de `role`.** Por ora `promotion` só reconhece `role === 'admin'` como
   administrador — existe algum outro papel (`staff`, `operator`...) que também deveria ter acesso às rotas
   admin?
-- [ ] **Rotação de chave.** Existe cadência prevista? Sem isso, `promotion` assume chave estática — se houver
-  rotação, o processo de atualizar `JWT_PUBLIC_KEY` precisa ficar combinado (redeploy manual vs. JWKS).
+- [ ] **Rotação de chave.** Existe cadência prevista? `promotion` vai cachear o JWKS por 1h — se a rotação for
+  mais frequente que isso, o cache precisa ser mais curto.
 
 ## Proposta técnica (pronta, aguardando os pontos acima)
 
@@ -40,14 +38,14 @@ mudou, porque a tradução fica isolada num único ponto de entrada:
 Authorization: Bearer <token>
         │
         ▼
- JWT_PUBLIC_KEY vazia? ──sim──▶ 500 "Serviço sem JWT_PUBLIC_KEY configurado"
-        │ não
+ busca JWKS (cache 1h) ──falha──▶ 500 "Falha ao obter chaves de verificação do token"
+        │ ok
         ▼
- JWT::decode($token, $publicKey)  [RS256]
+ JWT::decode($token, $keys)  [RS256, chave por `kid`]
         │
         ├─ expirado ──────────▶ 401 "Token expirado"
         ├─ assinatura inválida ▶ 401 "Assinatura do token inválida"
-        ├─ formato inválido ───▶ 401 "Token inválido"
+        ├─ kid/formato inválido ▶ 401 "Token inválido"
         │ ok
         ▼
  mapeia: sub→id, email→email, (role === 'admin')→isAdmin
@@ -58,14 +56,14 @@ Authorization: Bearer <token>
 
 | Arquivo | Mudança |
 |---|---|
-| `app/Http/Middleware/VerifyJwt.php` | Troca verificação HS256+segredo por decode RS256 direto com a chave pública de env; mapeia `sub`/`role` pros nomes internos (`id`/`isAdmin`) que o resto do código já usa |
-| `config/service.php` | `jwt_secret` sai, entra `jwt_public_key` |
-| `.env.example` | `JWT_SECRET=` vira `JWT_PUBLIC_KEY=` (vazio até termos o valor real) |
-| `tests/Feature/AuthenticationTest.php` | Reescreve os casos de JWT pro novo formato + 1 caso novo (`JWT_PUBLIC_KEY` não configurada) |
+| `app/Http/Middleware/VerifyJwt.php` | Troca verificação HS256+segredo por busca+cache de JWKS e decode RS256; mapeia `sub`/`role` pros nomes internos (`id`/`isAdmin`) que o resto do código já usa |
+| `config/service.php` | `jwt_secret` sai, entra `jwks_uri` |
+| `.env.example` | `JWT_SECRET=` vira `JWKS_URI=` (vazio até termos a URL real) |
+| `tests/Feature/AuthenticationTest.php` | Reescreve os casos de JWT pro novo formato + 3 casos novos (JWKS não configurado, inacessível, malformado) |
 | `tests/Feature/PromotionTest.php`, `tests/Feature/CouponTest.php` | Helpers de token trocam de HS256 manual pro helper novo — sem mudança de asserção de negócio |
 
-Sem dependência nova no `composer.json` — `firebase/php-jwt` (já instalado) faz o decode. Sem chamada de rede
-nem cache: é uma chave pública estática lida do env.
+Sem dependência nova no `composer.json` — `firebase/php-jwt` (já instalado) faz o parse do JWKS, e o `Http`
+facade do Laravel (Guzzle, já instalado) faz a busca.
 
 Plano de execução completo (arquivo por arquivo, com o código da mudança) está registrado internamente e é
 retomado assim que os pontos de confirmação acima fecharem.

@@ -11,8 +11,9 @@ use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * Verifica o token emitido pelo serviço de Autorização. Este serviço nunca emite
- * token — só confere a assinatura com a chave pública RS256 do Autorização.
+ * Verifica o token emitido pelo serviço de Cliente. Este serviço nunca emite
+ * token — só confere a assinatura com o segredo compartilhado, como cada
+ * serviço faz no projeto de referência da equipe.
  */
 class VerifyJwt
 {
@@ -24,18 +25,18 @@ class VerifyJwt
             return response()->json(['error' => 'Token de autenticação não fornecido'], 401);
         }
 
-        $publicKey = config('service.jwt_public_key');
+        $secret = config('service.jwt_secret');
 
-        if (empty($publicKey)) {
-            // Sem chave não há verificação possível. Deixar passar transformaria
+        if (empty($secret)) {
+            // Sem segredo não há verificação possível. Deixar passar transformaria
             // uma falha de configuração em brecha de autenticação.
-            return response()->json(['error' => 'Serviço sem JWT_PUBLIC_KEY configurado'], 500);
+            return response()->json(['error' => 'Serviço sem JWT_SECRET configurado'], 500);
         }
 
         try {
             // O algoritmo é fixado aqui e nunca lido do token: aceitar o "alg" do
             // próprio token é o que permite o ataque de "alg: none".
-            $payload = JWT::decode($token, new Key($publicKey, 'RS256'));
+            $payload = JWT::decode($token, new Key($secret, 'HS256'));
         } catch (ExpiredException) {
             return response()->json(['error' => 'Token expirado'], 401);
         } catch (SignatureInvalidException) {
@@ -45,9 +46,9 @@ class VerifyJwt
         }
 
         $request->attributes->set('user', [
-            'id' => $payload->sub ?? null,
+            'id' => $payload->id ?? null,
             'email' => $payload->email ?? null,
-            'isAdmin' => ($payload->role ?? null) === 'admin',
+            'isAdmin' => (bool) ($payload->isAdmin ?? false),
         ]);
 
         return $next($request);
