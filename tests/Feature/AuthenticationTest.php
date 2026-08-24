@@ -1,6 +1,6 @@
 <?php
 
-use App\Http\Middleware\VerificaJwt;
+use App\Http\Middleware\VerifyJwt;
 use Firebase\JWT\JWT;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Request;
@@ -18,8 +18,8 @@ function segredo(): string
 
 beforeEach(function () {
     config([
-        'servico.jwt_secret' => segredo(),
-        'servico.internal_secret' => 'segredo-interno-de-teste',
+        'service.jwt_secret' => segredo(),
+        'service.internal_secret' => 'segredo-interno-de-teste',
     ]);
 });
 
@@ -66,12 +66,12 @@ it('aceita token enviado por cookie', function () {
     // repassam o cookie de forma confiável em rota sob /api.
     $request = Request::create('/api/coupons', 'GET', cookies: ['accessToken' => token()]);
 
-    $response = (new VerificaJwt)->handle($request, fn ($r) => response()->json([
-        'usuario' => $r->attributes->get('usuario'),
+    $response = (new VerifyJwt)->handle($request, fn ($r) => response()->json([
+        'user' => $r->attributes->get('user'),
     ]));
 
     expect($response->getStatusCode())->toBe(200)
-        ->and(json_decode($response->getContent(), true)['usuario']['email'])->toBe('user@ganjj.com');
+        ->and(json_decode($response->getContent(), true)['user']['email'])->toBe('user@ganjj.com');
 });
 
 it('recusa rota interna sem o segredo compartilhado', function () {

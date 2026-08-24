@@ -15,19 +15,19 @@ use Symfony\Component\HttpFoundation\Response;
  * token — só confere a assinatura com o segredo compartilhado, como cada
  * serviço faz no projeto de referência da equipe.
  */
-class VerificaJwt
+class VerifyJwt
 {
     public function handle(Request $request, Closure $next): Response
     {
-        $token = $this->extrairToken($request);
+        $token = $this->extractToken($request);
 
         if ($token === null) {
             return response()->json(['error' => 'Token de autenticação não fornecido'], 401);
         }
 
-        $segredo = config('servico.jwt_secret');
+        $secret = config('service.jwt_secret');
 
-        if (empty($segredo)) {
+        if (empty($secret)) {
             // Sem segredo não há verificação possível. Deixar passar transformaria
             // uma falha de configuração em brecha de autenticação.
             return response()->json(['error' => 'Serviço sem JWT_SECRET configurado'], 500);
@@ -36,7 +36,7 @@ class VerificaJwt
         try {
             // O algoritmo é fixado aqui e nunca lido do token: aceitar o "alg" do
             // próprio token é o que permite o ataque de "alg: none".
-            $payload = JWT::decode($token, new Key($segredo, 'HS256'));
+            $payload = JWT::decode($token, new Key($secret, 'HS256'));
         } catch (ExpiredException) {
             return response()->json(['error' => 'Token expirado'], 401);
         } catch (SignatureInvalidException) {
@@ -45,7 +45,7 @@ class VerificaJwt
             return response()->json(['error' => 'Token inválido'], 401);
         }
 
-        $request->attributes->set('usuario', [
+        $request->attributes->set('user', [
             'id' => $payload->id ?? null,
             'email' => $payload->email ?? null,
             'isAdmin' => (bool) ($payload->isAdmin ?? false),
@@ -54,7 +54,7 @@ class VerificaJwt
         return $next($request);
     }
 
-    private function extrairToken(Request $request): ?string
+    private function extractToken(Request $request): ?string
     {
         $header = $request->header('Authorization');
 

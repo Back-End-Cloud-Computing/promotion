@@ -15,7 +15,7 @@ uses(RefreshDatabase::class);
  * exatamente isso que o SQLite em memória não reproduz fielmente.
  */
 beforeEach(function () {
-    config(['servico.jwt_secret' => str_repeat('a', 40)]);
+    config(['service.jwt_secret' => str_repeat('a', 40)]);
 });
 
 function tokenAdmin(bool $isAdmin = true): string
