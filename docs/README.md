@@ -9,6 +9,7 @@ Documentação de arquitetura e planejamento do serviço. Escrita para ser lida 
 | [Arquitetura e plano geral](arquitetura.md) | Por que este serviço existe, modelo de dados, camadas, contrato REST, decisões e o porquê de cada uma |
 | [Contrato da API](contrato-api.md) | Referência de endpoints para quem vai **consumir** este serviço (Carrinho, Pedido, Gateway) |
 | [Regras de negócio](regras-de-negocio.md) | As regras de desconto e cupom, com os casos de teste que provam cada uma |
+| [Alinhamento JWT/RS256](alinhamento-jwt-rs256.md) | 🟡 Pendente — o contrato real do serviço de Autorização diverge do assumido; plano técnico pronto, aguardando confirmação |
 
 ## Fases de execução
 
@@ -46,3 +47,4 @@ Estas dependem de conversa, não de commit:
 - [ ] Definir com a equipe quem constrói o **microsserviço de suporte** (e-mail/SMS/WhatsApp) e o **API Gateway** — são exigências do professor que nenhum dos 5 serviços de domínio cobre.
 - [ ] Avisar o Rodrigo (Pedido) que ambos usarão MySQL. Não quebra o requisito de "≥2 bancos distintos", mas o grupo deve saber.
 - [ ] Combinar com o Rodrigo o nome da exchange/fila e o payload do evento de pedido confirmado (pré-requisito da Fase 4).
+- [ ] Confirmar com o time de Autorização a URL do JWKS, o formato exato dos claims e os valores de `role` — ver [alinhamento-jwt-rs256.md](alinhamento-jwt-rs256.md).
