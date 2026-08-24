@@ -3,7 +3,6 @@
 use App\Domain\Campaigns\Entities\Campaign;
 use App\Domain\Coupons\Entities\Coupon;
 use App\Domain\Coupons\Services\CouponService;
-use Firebase\JWT\JWT;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 use function Pest\Laravel\postJson;
@@ -15,16 +14,12 @@ uses(RefreshDatabase::class);
  * exatamente isso que o SQLite em memória não reproduz fielmente.
  */
 beforeEach(function () {
-    config(['service.jwt_secret' => str_repeat('a', 40)]);
+    config(['service.jwt_public_key' => jwtTestPublicKey()]);
 });
 
 function tokenAdmin(bool $isAdmin = true): string
 {
-    return JWT::encode(
-        ['id' => 1, 'email' => 'admin@ganjj.com', 'isAdmin' => $isAdmin, 'exp' => time() + 3600],
-        str_repeat('a', 40),
-        'HS256'
-    );
+    return jwtTestToken(['email' => 'admin@ganjj.com', 'role' => $isAdmin ? 'admin' : 'customer']);
 }
 
 function asAdmin(): array
