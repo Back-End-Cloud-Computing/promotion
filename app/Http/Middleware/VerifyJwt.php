@@ -16,12 +16,14 @@ use Symfony\Component\HttpFoundation\Response;
  */
 class VerifyJwt
 {
+    private const ISSUER = 'ganjj-authorization';
+
     public function handle(Request $request, Closure $next): Response
     {
         $token = $this->extractToken($request);
 
         if ($token === null) {
-            return response()->json(['error' => 'Token de autenticação não fornecido'], 401);
+            return response()->error(401, 'Token de autenticação não fornecido');
         }
 
         $publicKey = config('service.jwt_public_key');
@@ -29,7 +31,7 @@ class VerifyJwt
         if (empty($publicKey)) {
             // Sem chave não há verificação possível. Deixar passar transformaria
             // uma falha de configuração em brecha de autenticação.
-            return response()->json(['error' => 'Serviço sem JWT_PUBLIC_KEY configurado'], 500);
+            return response()->error(500, 'Serviço sem JWT_PUBLIC_KEY configurado');
         }
 
         try {
@@ -37,11 +39,21 @@ class VerifyJwt
             // próprio token é o que permite o ataque de "alg: none".
             $payload = JWT::decode($token, new Key($publicKey, 'RS256'));
         } catch (ExpiredException) {
-            return response()->json(['error' => 'Token expirado'], 401);
+            return response()->error(401, 'Token expirado');
         } catch (SignatureInvalidException) {
-            return response()->json(['error' => 'Assinatura do token inválida'], 401);
+            return response()->error(401, 'Assinatura do token inválida');
         } catch (\Throwable) {
-            return response()->json(['error' => 'Token inválido'], 401);
+            return response()->error(401, 'Token inválido');
+        }
+
+        // Mesma validação que authorization/examples/verify_token.py documenta
+        // como o contrato esperado para qualquer serviço consumidor.
+        if (($payload->iss ?? null) !== self::ISSUER) {
+            return response()->error(401, 'Emissor do token inesperado');
+        }
+
+        if (($payload->typ ?? null) !== 'access') {
+            return response()->error(401, 'Token não é um token de acesso');
         }
 
         $request->attributes->set('user', [

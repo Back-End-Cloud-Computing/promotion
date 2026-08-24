@@ -3,6 +3,7 @@
 use App\Http\Middleware\VerifyJwt;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Http;
 
 use function Pest\Laravel\getJson;
 use function Pest\Laravel\postJson;
@@ -19,7 +20,7 @@ beforeEach(function () {
 it('recusa rota admin sem token', function () {
     getJson('/api/coupons')
         ->assertStatus(401)
-        ->assertJson(['error' => 'Token de autenticação não fornecido']);
+        ->assertJson(['message' => 'Token de autenticação não fornecido']);
 });
 
 it('recusa token assinado por outra chave', function () {
@@ -30,19 +31,19 @@ it('recusa token assinado por outra chave', function () {
 
     getJson('/api/coupons', ['Authorization' => 'Bearer '.jwtTestToken([], $outraChavePrivada)])
         ->assertStatus(401)
-        ->assertJson(['error' => 'Assinatura do token inválida']);
+        ->assertJson(['message' => 'Assinatura do token inválida']);
 });
 
 it('recusa token expirado', function () {
     getJson('/api/coupons', ['Authorization' => 'Bearer '.jwtTestToken(['exp' => time() - 60])])
         ->assertStatus(401)
-        ->assertJson(['error' => 'Token expirado']);
+        ->assertJson(['message' => 'Token expirado']);
 });
 
 it('recusa usuário sem privilégio de admin', function () {
     getJson('/api/coupons', ['Authorization' => 'Bearer '.jwtTestToken(['role' => 'CLIENTE'])])
         ->assertStatus(403)
-        ->assertJson(['error' => 'Acesso restrito a administradores']);
+        ->assertJson(['message' => 'Acesso restrito a administradores']);
 });
 
 it('aceita token de admin válido', function () {
@@ -67,13 +68,13 @@ it('recusa quando JWT_PUBLIC_KEY não está configurada', function () {
 
     getJson('/api/coupons', ['Authorization' => 'Bearer '.jwtTestToken()])
         ->assertStatus(500)
-        ->assertJson(['error' => 'Serviço sem JWT_PUBLIC_KEY configurado']);
+        ->assertJson(['message' => 'Serviço sem JWT_PUBLIC_KEY configurado']);
 });
 
 it('recusa rota interna sem o segredo compartilhado', function () {
     postJson('/internal/discounts/calculate', ['items' => []])
         ->assertStatus(403)
-        ->assertJson(['error' => 'Segredo interno inválido']);
+        ->assertJson(['message' => 'Segredo interno inválido']);
 });
 
 it('recusa rota interna com segredo errado', function () {
@@ -85,4 +86,26 @@ it('deixa os health checks abertos', function () {
     // O kubelet não envia header de autenticação.
     getJson('/health')->assertOk()->assertJson(['status' => 'ok']);
     getJson('/health/ready')->assertOk()->assertJson(['status' => 'ready']);
+});
+
+it('recusa token com emissor inesperado', function () {
+    getJson('/api/coupons', ['Authorization' => 'Bearer '.jwtTestToken(['iss' => 'outro-servico'])])
+        ->assertStatus(401)
+        ->assertJson(['message' => 'Emissor do token inesperado']);
+});
+
+it('recusa token que não é de acesso', function () {
+    // Um refresh token é assinado pela mesma chave, mas nunca deveria autenticar
+    // uma requisição — só serve para pedir um access token novo ao authorization.
+    getJson('/api/coupons', ['Authorization' => 'Bearer '.jwtTestToken(['typ' => 'refresh'])])
+        ->assertStatus(401)
+        ->assertJson(['message' => 'Token não é um token de acesso']);
+});
+
+it('valida o token sem fazer nenhuma chamada de rede', function () {
+    // A verificação é local por design (chave pública já carregada via env, sem
+    // JWKS): se algum dia isso mudar sem querer, este teste estoura na hora.
+    Http::preventStrayRequests();
+
+    getJson('/api/coupons', ['Authorization' => 'Bearer '.jwtTestToken()])->assertOk();
 });

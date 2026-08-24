@@ -32,31 +32,31 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        // O resto do sistema responde erro como {"error": "..."}. Sem isto, o
-        // Laravel devolveria {"message": ..., "errors": {...}} e cada consumidor
-        // precisaria tratar dois formatos.
+        // O resto do sistema responde erro em {status, error, message, fields?,
+        // timestamp} (ver Response::macro('error', ...) em AppServiceProvider).
+        // Sem isto, o Laravel devolveria {"message": ..., "errors": {...}} e cada
+        // consumidor precisaria tratar dois formatos.
         $exceptions->render(function (Throwable $e, Request $request) {
             if (! $request->is('api/*', 'internal/*', 'health*')) {
                 return null;
             }
 
             if ($e instanceof ValidationException) {
-                return response()->json(['error' => $e->validator->errors()->first()], 422);
+                $fields = collect($e->validator->errors()->toArray())->map(fn ($messages) => $messages[0])->all();
+
+                return response()->error(422, 'Há campos inválidos na requisição.', $fields);
             }
 
             if ($e instanceof NotFoundHttpException) {
-                return response()->json(['error' => 'Recurso não encontrado'], 404);
+                return response()->error(404, 'Recurso não encontrado');
             }
 
             if ($e instanceof DuplicateCouponCodeException) {
-                return response()->json(['error' => $e->getMessage()], 409);
+                return response()->error(409, $e->getMessage());
             }
 
             if ($e instanceof HttpExceptionInterface) {
-                return response()->json(
-                    ['error' => $e->getMessage() ?: 'Erro na requisição'],
-                    $e->getStatusCode()
-                );
+                return response()->error($e->getStatusCode(), $e->getMessage() ?: 'Erro na requisição');
             }
 
             return null;

@@ -36,7 +36,9 @@ class DiscountController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json(['error' => $validator->errors()->first()], 422);
+            $fields = collect($validator->errors()->toArray())->map(fn ($messages) => $messages[0])->all();
+
+            return response()->error(422, 'Há campos inválidos na requisição.', $fields);
         }
 
         $items = $request->input('items');
@@ -70,11 +72,11 @@ class DiscountController extends Controller
         $coupon = $this->coupons->find($code);
 
         if ($coupon === null) {
-            return response()->json(['error' => 'Cupom não encontrado'], 404);
+            return response()->error(404, 'Cupom não encontrado');
         }
 
         if (! $this->coupons->consume($coupon)) {
-            return response()->json(['error' => 'Limite de uso atingido'], 409);
+            return response()->error(409, 'Limite de uso atingido');
         }
 
         return response()->json([

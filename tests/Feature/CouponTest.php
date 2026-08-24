@@ -48,7 +48,7 @@ it('recusa cupom cujo código só difere na caixa', function () {
         'value' => 10,
     ], asAdmin())
         ->assertStatus(409)
-        ->assertJson(['error' => 'Código de cupom já existe']);
+        ->assertJson(['message' => 'Código de cupom já existe']);
 
     expect(Coupon::count())->toBe(1);
 });
