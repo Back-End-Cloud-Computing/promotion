@@ -1,6 +1,7 @@
 <?php
 
 use App\Domain\Promotions\Entities\Promotion;
+use Firebase\JWT\JWT;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 use function Pest\Laravel\postJson;
@@ -8,12 +9,18 @@ use function Pest\Laravel\postJson;
 uses(RefreshDatabase::class);
 
 beforeEach(function () {
-    config(['service.jwt_public_key' => jwtTestPublicKey()]);
+    config(['service.jwt_secret' => str_repeat('a', 40)]);
 });
 
 function asAdminPromotion(): array
 {
-    return ['Authorization' => 'Bearer '.jwtTestToken(['email' => 'admin@ganjj.com'])];
+    $token = JWT::encode(
+        ['id' => 1, 'email' => 'admin@ganjj.com', 'isAdmin' => true, 'exp' => time() + 3600],
+        str_repeat('a', 40),
+        'HS256'
+    );
+
+    return ['Authorization' => 'Bearer '.$token];
 }
 
 // Mesma regra do cupom: unicidade é conflito (409), contra a constraint UNIQUE

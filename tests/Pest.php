@@ -1,6 +1,5 @@
 <?php
 
-use Firebase\JWT\JWT;
 use Tests\TestCase;
 
 /*
@@ -45,42 +44,7 @@ expect()->extend('toBeOne', function () {
 |
 */
 
-/**
- * Par RSA efêmero para assinar tokens de teste como o serviço de Autorização
- * faria (RS256). Gerado uma vez por processo — keygen custa tempo real.
- *
- * @return array{0: string, 1: string} [chave privada PEM, chave pública PEM]
- */
-function jwtTestKeyPair(): array
+function something()
 {
-    static $pair;
-
-    if ($pair === null) {
-        $resource = openssl_pkey_new([
-            'private_key_bits' => 2048,
-            'private_key_type' => OPENSSL_KEYTYPE_RSA,
-        ]);
-
-        openssl_pkey_export($resource, $privateKey);
-        $publicKey = openssl_pkey_get_details($resource)['key'];
-
-        $pair = [$privateKey, $publicKey];
-    }
-
-    return $pair;
-}
-
-function jwtTestPublicKey(): string
-{
-    return jwtTestKeyPair()[1];
-}
-
-function jwtTestToken(array $payload = [], ?string $privateKey = null): string
-{
-    return JWT::encode(array_merge([
-        'sub' => '1',
-        'email' => 'user@ganjj.com',
-        'role' => 'admin',
-        'exp' => time() + 3600,
-    ], $payload), $privateKey ?? jwtTestKeyPair()[0], 'RS256');
+    // ..
 }
