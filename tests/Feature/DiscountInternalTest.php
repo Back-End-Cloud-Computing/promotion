@@ -112,7 +112,7 @@ it('recusa consumo de cupom esgotado', function () {
 
     postJson('/internal/coupons/ESGOTADO/consume', [], internal())
         ->assertStatus(409)
-        ->assertJson(['error' => 'Limite de uso atingido']);
+        ->assertJson(['message' => 'Limite de uso atingido']);
 });
 
 it('não consome uso ao apenas calcular', function () {

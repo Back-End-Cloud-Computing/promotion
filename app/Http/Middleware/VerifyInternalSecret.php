@@ -17,7 +17,7 @@ class VerifyInternalSecret
         $expected = config('service.internal_secret');
 
         if (empty($expected)) {
-            return response()->json(['error' => 'Serviço sem INTERNAL_SECRET configurado'], 500);
+            return response()->error(500, 'Serviço sem INTERNAL_SECRET configurado');
         }
 
         $received = $request->header('x-internal-secret');
@@ -25,7 +25,7 @@ class VerifyInternalSecret
         // Comparação em tempo constante: comparar segredo com === vaza informação
         // pelo tempo de resposta.
         if (! is_string($received) || ! hash_equals($expected, $received)) {
-            return response()->json(['error' => 'Segredo interno inválido'], 403);
+            return response()->error(403, 'Segredo interno inválido');
         }
 
         return $next($request);
