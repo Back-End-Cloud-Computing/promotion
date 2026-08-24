@@ -16,7 +16,7 @@ class VerifyAdmin
         $user = $request->attributes->get('user');
 
         if (! is_array($user) || $user['isAdmin'] !== true) {
-            return response()->json(['error' => 'Acesso restrito a administradores'], 403);
+            return response()->error(403, 'Acesso restrito a administradores');
         }
 
         return $next($request);

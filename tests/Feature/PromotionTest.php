@@ -27,7 +27,7 @@ it('recusa promoção para produto que já tem uma', function () {
         'category' => 'Inverno',
     ], asAdminPromotion())
         ->assertStatus(409)
-        ->assertJson(['error' => 'Produto já possui promoção']);
+        ->assertJson(['message' => 'Produto já possui promoção']);
 
     expect(Promotion::count())->toBe(1);
 });
