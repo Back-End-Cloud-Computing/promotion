@@ -19,7 +19,7 @@ beforeEach(function () {
 
 function tokenAdmin(bool $isAdmin = true): string
 {
-    return jwtTestToken(['email' => 'admin@ganjj.com', 'role' => $isAdmin ? 'admin' : 'customer']);
+    return jwtTestToken(['email' => 'admin@ganjj.com', 'role' => $isAdmin ? 'ADMIN' : 'CLIENTE']);
 }
 
 function asAdmin(): array

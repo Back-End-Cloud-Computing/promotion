@@ -40,7 +40,7 @@ it('recusa token expirado', function () {
 });
 
 it('recusa usuário sem privilégio de admin', function () {
-    getJson('/api/coupons', ['Authorization' => 'Bearer '.jwtTestToken(['role' => 'customer'])])
+    getJson('/api/coupons', ['Authorization' => 'Bearer '.jwtTestToken(['role' => 'CLIENTE'])])
         ->assertStatus(403)
         ->assertJson(['error' => 'Acesso restrito a administradores']);
 });
