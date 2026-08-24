@@ -36,7 +36,7 @@ Vale uma passada consciente antes da apresentação:
 
 | Item | Verificar |
 |---|---|
-| Rotas admin | Todas exigem `VerificaJwt` **e** `VerificaAdmin` |
+| Rotas admin | Todas exigem `VerifyJwt` **e** `VerifyAdmin` |
 | Rotas `/internal` | Fora do Ingress público — não devem ser alcançáveis de fora do cluster |
 | Mensagens de erro | Não vazam SQL, stack trace nem nome de tabela |
 | `APP_DEBUG` | `false` em qualquer ambiente que não seja local |

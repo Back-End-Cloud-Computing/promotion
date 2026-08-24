@@ -7,15 +7,15 @@ use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * Roda sempre depois de VerificaJwt, que preenche o atributo `usuario`.
+ * Roda sempre depois de VerifyJwt, que preenche o atributo `user`.
  */
-class VerificaAdmin
+class VerifyAdmin
 {
     public function handle(Request $request, Closure $next): Response
     {
-        $usuario = $request->attributes->get('usuario');
+        $user = $request->attributes->get('user');
 
-        if (! is_array($usuario) || $usuario['isAdmin'] !== true) {
+        if (! is_array($user) || $user['isAdmin'] !== true) {
             return response()->json(['error' => 'Acesso restrito a administradores'], 403);
         }
 

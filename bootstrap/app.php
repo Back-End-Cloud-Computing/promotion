@@ -1,9 +1,9 @@
 <?php
 
 use App\Domain\Coupons\Exceptions\DuplicateCouponCodeException;
-use App\Http\Middleware\VerificaAdmin;
-use App\Http\Middleware\VerificaJwt;
-use App\Http\Middleware\VerificaSegredoInterno;
+use App\Http\Middleware\VerifyAdmin;
+use App\Http\Middleware\VerifyInternalSecret;
+use App\Http\Middleware\VerifyJwt;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -26,9 +26,9 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
-            'jwt' => VerificaJwt::class,
-            'admin' => VerificaAdmin::class,
-            'interno' => VerificaSegredoInterno::class,
+            'jwt' => VerifyJwt::class,
+            'admin' => VerifyAdmin::class,
+            'internal' => VerifyInternalSecret::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

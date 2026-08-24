@@ -2,13 +2,13 @@
 
 namespace App\Domain\Promotions\Requests;
 
-use App\Http\Requests\Concerns\RespondeComErroSimples;
+use App\Http\Requests\Concerns\RespondsWithSimpleError;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
 class StorePromotionRequest extends FormRequest
 {
-    use RespondeComErroSimples;
+    use RespondsWithSimpleError;
 
     public function authorize(): bool
     {

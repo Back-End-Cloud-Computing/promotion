@@ -3,14 +3,14 @@
 namespace App\Domain\Coupons\Requests;
 
 use App\Domain\Coupons\Entities\Coupon;
-use App\Http\Requests\Concerns\RespondeComErroSimples;
+use App\Http\Requests\Concerns\RespondsWithSimpleError;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
 class UpdateCouponRequest extends FormRequest
 {
-    use RespondeComErroSimples;
+    use RespondsWithSimpleError;
 
     public function authorize(): bool
     {

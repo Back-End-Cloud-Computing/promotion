@@ -10,7 +10,7 @@ use Illuminate\Http\Exceptions\HttpResponseException;
  * padrão do Laravel ({"message": ..., "errors": {...}}). Este trait alinha os
  * FormRequests da API a esse contrato.
  */
-trait RespondeComErroSimples
+trait RespondsWithSimpleError
 {
     protected function failedValidation(Validator $validator): void
     {

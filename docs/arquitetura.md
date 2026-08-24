@@ -201,11 +201,11 @@ app/
       routes/                          api.php (validate) e internal.php (calculate/consume)
   Http/
     Controllers/Controller.php         Base abstrata — cross-cutting, sem módulo dono
-    Requests/Concerns/RespondeComErroSimples.php
+    Requests/Concerns/RespondsWithSimpleError.php
     Middleware/
-      VerificaJwt.php
-      VerificaAdmin.php
-      VerificaSegredoInterno.php
+      VerifyJwt.php
+      VerifyAdmin.php
+      VerifyInternalSecret.php
 ```
 
 `routes/api.php` e `routes/internal.php` na raiz viram arquivos finos que só dão `require` no arquivo de rotas
