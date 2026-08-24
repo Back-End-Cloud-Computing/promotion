@@ -26,7 +26,8 @@ não de construção.
 A verificação de JWT existe desde a Fase 1, mas com um contrato hipotético. O que descobrimos até agora:
 
 - ~~O `JWT_SECRET` é o mesmo dos dois lados.~~ Não existe segredo simétrico — Autorização assina com RS256
-  (par de chaves), `promotion` precisa buscar a chave pública via JWKS.
+  (par de chaves). `promotion` vai ler a chave pública direto de uma var de ambiente (`JWT_PUBLIC_KEY`), sem
+  endpoint JWKS — mais simples enquanto não há rotação de chave confirmada.
 - ~~O payload é mesmo `{id, email, isAdmin}`.~~ O payload real é `{sub, email, role}` — `role` é string, não
   o booleano `isAdmin` que o código assume hoje.
 - ~~O algoritmo bate (HS256).~~ É RS256.
