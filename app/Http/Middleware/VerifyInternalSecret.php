@@ -10,21 +10,21 @@ use Symfony\Component\HttpFoundation\Response;
  * Protege as rotas /internal, consumidas por Carrinho e Pedido. Mesmo esquema do
  * projeto de referência: segredo compartilhado, fora do API Gateway.
  */
-class VerificaSegredoInterno
+class VerifyInternalSecret
 {
     public function handle(Request $request, Closure $next): Response
     {
-        $esperado = config('servico.internal_secret');
+        $expected = config('service.internal_secret');
 
-        if (empty($esperado)) {
+        if (empty($expected)) {
             return response()->json(['error' => 'Serviço sem INTERNAL_SECRET configurado'], 500);
         }
 
-        $recebido = $request->header('x-internal-secret');
+        $received = $request->header('x-internal-secret');
 
         // Comparação em tempo constante: comparar segredo com === vaza informação
         // pelo tempo de resposta.
-        if (! is_string($recebido) || ! hash_equals($esperado, $recebido)) {
+        if (! is_string($received) || ! hash_equals($expected, $received)) {
             return response()->json(['error' => 'Segredo interno inválido'], 403);
         }
 
