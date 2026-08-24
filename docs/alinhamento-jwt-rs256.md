@@ -1,6 +1,7 @@
 # Alinhamento — JWT real do serviço de Autorização
 
-**Status:** 🟡 pendente — aguardando confirmação do time de Autorização antes de implementar.
+**Status:** ✅ resolvido — ver [ADR 0002](adr/0002-jwt-rs256-chave-estatica.md). Este documento
+fica como registro histórico do problema original; a decisão formal vive no ADR.
 
 ## O problema
 
@@ -19,16 +20,17 @@ lados divergem em algoritmo **e** em formato de claim — não é só o segredo 
 
 ## O que precisamos confirmar com o time de Autorização
 
-- [ ] **A chave pública em si.** RS256 exige a chave pública pra verificar assinatura. Decisão: cola direto
+Resolvido — ver [ADR 0002](adr/0002-jwt-rs256-chave-estatica.md) pra decisão formal.
+
+- [x] **A chave pública em si.** RS256 exige a chave pública pra verificar assinatura. Decisão: cola direto
   como var de ambiente (`JWT_PUBLIC_KEY`, PEM), sem endpoint JWKS — mais simples, sem chamada de rede por
-  request. Falta o valor real. Se o time confirmar rotação de chave ativa, revisitamos essa decisão (aí faria
-  sentido JWKS de verdade).
-- [ ] **Confirmar os nomes exatos dos claims** — `sub`/`email`/`role` como observado, ou há variação (`roles`
-  no plural, namespace tipo `https://.../role`, etc.)?
-- [ ] **Confirmar os valores possíveis de `role`.** Por ora `promotion` só reconhece `role === 'admin'` como
-  administrador — existe algum outro papel (`staff`, `operator`...) que também deveria ter acesso às rotas
-  admin?
-- [ ] **Rotação de chave.** Existe cadência prevista? Sem isso, `promotion` assume chave estática — se houver
+  request. Se o time confirmar rotação de chave ativa, revisitamos essa decisão (aí faria sentido JWKS de
+  verdade).
+- [x] **Confirmar os nomes exatos dos claims** — confirmado `sub`/`email`/`role`, sem variação.
+- [x] **Confirmar os valores possíveis de `role`.** `promotion` reconhece `role === 'ADMIN'` (maiúsculo — a
+  claim vem de um enum Java, `UserRole.name()`) como administrador; o outro valor observado é `CLIENTE`, sem
+  acesso às rotas admin. Nenhum outro papel (`staff`/`operator`) confirmado até agora.
+- [x] **Rotação de chave.** Existe cadência prevista? Sem isso, `promotion` assume chave estática — se houver
   rotação, o processo de atualizar `JWT_PUBLIC_KEY` precisa ficar combinado (redeploy manual vs. JWKS).
 
 ## Proposta técnica (pronta, aguardando os pontos acima)
