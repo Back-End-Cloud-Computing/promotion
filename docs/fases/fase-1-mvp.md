@@ -74,9 +74,9 @@ mantendo a convenção da equipe. Um trait compartilhado resolve para todos de u
 
 | Middleware | O quê |
 |---|---|
-| `VerificaJwt` | Decodifica `Authorization: Bearer` ou cookie `accessToken` com `firebase/php-jwt` |
-| `VerificaAdmin` | 403 se `isAdmin` não for true |
-| `VerificaSegredoInterno` | Compara header `x-internal-secret`; 403 se não bater |
+| `VerifyJwt` | Decodifica `Authorization: Bearer` ou cookie `accessToken` com `firebase/php-jwt` |
+| `VerifyAdmin` | 403 se `isAdmin` não for true |
+| `VerifyInternalSecret` | Compara header `x-internal-secret`; 403 se não bater |
 
 O JWT é apenas verificado, nunca emitido — quem emite é o serviço de Cliente.
 

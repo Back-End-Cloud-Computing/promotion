@@ -11,7 +11,7 @@ use function Pest\Laravel\postJson;
 uses(RefreshDatabase::class);
 
 beforeEach(function () {
-    config(['servico.internal_secret' => str_repeat('c', 40)]);
+    config(['service.internal_secret' => str_repeat('c', 40)]);
 });
 
 function internal(): array

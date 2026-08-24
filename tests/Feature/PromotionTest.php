@@ -9,7 +9,7 @@ use function Pest\Laravel\postJson;
 uses(RefreshDatabase::class);
 
 beforeEach(function () {
-    config(['servico.jwt_secret' => str_repeat('a', 40)]);
+    config(['service.jwt_secret' => str_repeat('a', 40)]);
 });
 
 function asAdminPromotion(): array
