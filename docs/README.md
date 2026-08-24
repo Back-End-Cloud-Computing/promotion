@@ -47,4 +47,4 @@ Estas dependem de conversa, não de commit:
 - [ ] Definir com a equipe quem constrói o **microsserviço de suporte** (e-mail/SMS/WhatsApp) e o **API Gateway** — são exigências do professor que nenhum dos 5 serviços de domínio cobre.
 - [ ] Avisar o Rodrigo (Pedido) que ambos usarão MySQL. Não quebra o requisito de "≥2 bancos distintos", mas o grupo deve saber.
 - [ ] Combinar com o Rodrigo o nome da exchange/fila e o payload do evento de pedido confirmado (pré-requisito da Fase 4).
-- [ ] Confirmar com o time de Autorização a URL do JWKS, o formato exato dos claims e os valores de `role` — ver [alinhamento-jwt-rs256.md](alinhamento-jwt-rs256.md).
+- [ ] Confirmar com o time de Autorização a chave pública RS256, o formato exato dos claims e os valores de `role` — ver [alinhamento-jwt-rs256.md](alinhamento-jwt-rs256.md).
