@@ -45,7 +45,7 @@ Extrair isso para um serviço próprio e transformá-lo em um domínio de verdad
 
 | Avaliação | Peso | Data | Rubrica |
 |---|---|---|---|
-| **N1** — prática individual | 60% | 06/10 | Contêineres 3,0 · Integração REST/mensageria 4,0 · Cluster Kubernetes 3,0 |
+| **N1** — prática individual | 60% | 06/10 | 🟡 Lab passado pelo professor, não o repo individual — rubrica antiga (Contêineres 3,0 · Integração 4,0 · K8s 3,0) não confirmada |
 | **N2** — apresentação em equipe | 40% | 10/11 | Arquitetura em K8s 4,0 · Segurança e observabilidade 3,0 · Apresentação técnica 3,0 |
 
 Requisitos declarados pelo professor: sem frontend; um microsserviço por integrante; pelo menos duas linguagens
@@ -55,8 +55,9 @@ API Gateway na frente.
 O laboratório mínimo da Aula 02 pede: recurso principal com camadas **Domain/Service/Controller**, CRUD
 completo (GET/POST/PUT/DELETE) e código versionado.
 
-**A consequência prática:** o CRUD é a menor parte do trabalho. A maior parte da nota individual está em
-Docker, Kubernetes e integração — por isso as fases 2, 3 e 4 existem e têm data.
+**A consequência prática:** Docker, Kubernetes e integração continuam valendo a pena — é o que a N2 em equipe
+cobra e o que os labs de aula exercitam — mas não está confirmado que pontuam direto na N1. Fases 2, 3 e 4
+seguem valendo como preparo técnico, sem prometer pontos específicos de N1.
 
 ## Decisões de arquitetura
 

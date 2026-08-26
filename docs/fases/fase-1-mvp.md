@@ -139,4 +139,4 @@ resposta muda conforme quem implementa.
 
 ## Próxima
 
-[Fase 2 — Docker](fase-2-docker.md), após a aula de 18/08. Vale 3,0 pontos na N1.
+[Fase 2 — Docker](fase-2-docker.md), após a aula de 18/08.
