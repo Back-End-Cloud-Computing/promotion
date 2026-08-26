@@ -1,7 +1,7 @@
 # Fase 3 — Kubernetes
 
 **Quando:** após a aula de 25/08 (Ingress após 01/09).
-**Vale:** 3,0 pontos na N1 (R3 — distribuição no cluster com padrões arquiteturais).
+**Vale:** preparo técnico pra N2 (arquitetura em K8s) — pontuação direta na N1 não confirmada, ver [pendências](../README.md#pendências-fora-do-código).
 **Entrega:** manifests, probes ligadas aos health checks, configuração externalizada e segredos fora do
 repositório.
 
@@ -12,14 +12,22 @@ distribuído" — que é o tema da disciplina.
 
 ## Pré-requisitos
 
-Instalar antes da aula, não durante:
+Conferir antes de qualquer manifest — nesta ordem, porque cada um depende do anterior:
 
 ```bash
-brew install kubectl minikube
-minikube start
+# 1. Colima (runtime Docker usado aqui, não Docker Desktop)
+colima status || colima start
+
+# 2. kubectl e minikube
+command -v kubectl >/dev/null || brew install kubectl
+command -v minikube >/dev/null || brew install minikube
+
+# 3. Cluster
+minikube status || minikube start --driver=docker
 ```
 
-Nenhum dos dois está instalado na máquina hoje.
+Sinal de que o Node aparece `NotReady` por alguns segundos após `minikube start` é esperado (bridge CNI
+subindo) — não é erro.
 
 ## Tarefas
 
@@ -44,9 +52,12 @@ aparecem quando a segunda réplica sobe.
 |---|---|
 | `deployment.yaml` | Deployment da aplicação, réplicas, probes, recursos |
 | `service.yaml` | `ClusterIP` expondo a porta 8000 |
-| `configmap.yaml` | Config não sensível (`APP_NAME`, `DB_HOST`, `APP_TIMEZONE`) |
-| `secret.yaml` | Template com placeholder — **nunca com valor real** |
+| `configmap.yaml` | Config não sensível (`APP_NAME`, `DB_HOST`, `APP_TIMEZONE`, `JWT_PUBLIC_KEY`) |
 | `mysql.yaml` | Banco com PVC |
+
+Sem `secret.yaml` — nem como template. "Segredos fora do repositório" é literal aqui: nenhum manifest
+`kind: Secret` fica versionado, nem com placeholder. As chaves esperadas ficam documentadas em texto no
+`k8s/README.md`.
 
 ### 3. Probes ligadas aos health checks
 
@@ -65,8 +76,10 @@ de banco em um apagão completo.
 
 ### 4. Segredos
 
-`JWT_SECRET`, `INTERNAL_SECRET` e `DB_PASSWORD` entram via `kubectl create secret`, com o comando documentado
-no README. O `secret.yaml` versionado tem apenas placeholders.
+`APP_KEY`, `INTERNAL_SECRET` e `DB_PASSWORD` entram via `kubectl create secret`, com o comando e a lista de
+chaves documentados em `k8s/README.md` — em texto, não em YAML versionado. `JWT_PUBLIC_KEY` vai no ConfigMap,
+não no Secret — é a chave *pública* RS256 (ver [alinhamento-jwt-rs256.md](../alinhamento-jwt-rs256.md)), sem
+valor de confidencialidade.
 
 > Secret do Kubernetes é base64, não criptografia. Um `secret.yaml` com valor real commitado é um segredo em
 > texto claro com um passo a mais.
@@ -107,11 +120,11 @@ tráfego.
 
 ## Concluída quando
 
-- [ ] `kubectl apply -k k8s/` sobe aplicação e banco
-- [ ] Pods ficam `READY 1/1`
-- [ ] Endpoint responde via `port-forward`
-- [ ] Config vem de ConfigMap; segredos de Secret criado fora do git
-- [ ] Pod deletado é recriado sozinho
+- [x] `kubectl apply -k k8s/` sobe aplicação e banco
+- [x] Pods ficam `READY 1/1`
+- [x] Endpoint responde via `port-forward`
+- [x] Config vem de ConfigMap; segredos de Secret criado fora do git
+- [x] Pod deletado é recriado sozinho
 - [ ] Ingress funcionando (após 01/09, depende da equipe)
 
 ## Riscos
@@ -125,4 +138,4 @@ réplica não acontece; se escalar, migration vira `initContainer` ou `Job`.
 
 ## Próxima
 
-[Fase 4 — Integração e mensageria](fase-4-integracao.md), após 15/09. Vale 4,0 pontos na N1 — a maior fatia.
+[Fase 4 — Integração e mensageria](fase-4-integracao.md), após 15/09.
