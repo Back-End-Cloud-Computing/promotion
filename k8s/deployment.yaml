@@ -1,0 +1,68 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: promotion
+  labels:
+    app: promotion
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: promotion
+  template:
+    metadata:
+      labels:
+        app: promotion
+    spec:
+      # Migration isolada num initContainer: com 2+ réplicas subindo juntas, rodar
+      # `migrate` no entrypoint de cada uma dispararia a mesma migration em paralelo.
+      # O retry cobre a corrida normal de startup contra o Deployment do MySQL.
+      initContainers:
+        - name: migrate
+          image: promotion:local
+          imagePullPolicy: IfNotPresent
+          command:
+            - sh
+            - -c
+            - until php artisan migrate --force; do echo 'banco ainda não respondeu, tentando de novo...'; sleep 3; done
+          envFrom:
+            - configMapRef:
+                name: promotion-config
+            - secretRef:
+                name: promotion-secrets
+      containers:
+        - name: promotion
+          image: promotion:local
+          imagePullPolicy: IfNotPresent
+          # Sobrescreve o ENTRYPOINT da imagem (que roda migrate) — a migration já
+          # rodou no initContainer acima.
+          command:
+            - php
+            - artisan
+            - serve
+            - --host=0.0.0.0
+            - --port=8000
+          ports:
+            - containerPort: 8000
+          envFrom:
+            - configMapRef:
+                name: promotion-config
+            - secretRef:
+                name: promotion-secrets
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /health/ready
+              port: 8000
+            initialDelaySeconds: 5
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "500m"
+              memory: "256Mi"
