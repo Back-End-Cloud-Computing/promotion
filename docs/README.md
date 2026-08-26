@@ -19,9 +19,9 @@ Cada fase é entregável por si só e está ancorada numa data do cronograma da 
 |---|---|---|---|
 | 0 | [Fundação](fases/fase-0-fundacao.md) | agora | Projeto, esteira, banco, primeiro commit |
 | 1 | [MVP do laboratório](fases/fase-1-mvp.md) | antes de 18/08 | Domain/Service/Controller, CRUD, cálculo de desconto testado |
-| 2 | [Docker](fases/fase-2-docker.md) | após 18/08 | Imagem, compose, health checks — vale 3,0 na N1 |
-| 3 | [Kubernetes](fases/fase-3-kubernetes.md) | após 25/08 | Manifests, probes, secrets — vale 3,0 na N1 |
-| 4 | [Integração e mensageria](fases/fase-4-integracao.md) | após 15/09 | REST interno + RabbitMQ — vale 4,0 na N1 |
+| 2 | [Docker](fases/fase-2-docker.md) | após 18/08 | Imagem, compose, health checks |
+| 3 | [Kubernetes](fases/fase-3-kubernetes.md) | após 25/08 | Manifests, probes, secrets |
+| 4 | [Integração e mensageria](fases/fase-4-integracao.md) | após 15/09 | REST interno + RabbitMQ |
 | 5 | [Segurança e observabilidade](fases/fase-5-seguranca.md) | após 20/10 | JWT alinhado, métricas — pesa na N2 |
 
 ## Datas que não se movem
@@ -33,7 +33,7 @@ Cada fase é entregável por si só e está ancorada numa data do cronograma da 
 | 01/09 | Aula de NGINX Ingress Controller |
 | 15/09 | Aula de Mensageria com RabbitMQ |
 | 22/09 | Atividade formativa: integração de microsserviços |
-| **06/10** | **N1 — avaliação individual, 60% da nota** |
+| **06/10** | **N1 — avaliação individual, 60% da nota (lab passado pelo professor, não o repo)** |
 | 20/10 | Aula de Segurança com JWT |
 | 27/10 | Aula de Helm |
 | 03/11 | Aula de Observabilidade |
@@ -48,3 +48,4 @@ Estas dependem de conversa, não de commit:
 - [ ] Avisar o Rodrigo (Pedido) que ambos usarão MySQL. Não quebra o requisito de "≥2 bancos distintos", mas o grupo deve saber.
 - [ ] Combinar com o Rodrigo o nome da exchange/fila e o payload do evento de pedido confirmado (pré-requisito da Fase 4).
 - [ ] Confirmar com o time de Autorização a chave pública RS256, o formato exato dos claims e os valores de `role` — ver [alinhamento-jwt-rs256.md](alinhamento-jwt-rs256.md).
+- [ ] Entender o formato exato da N1 agora que é um lab do professor, não o repo individual — o que isso muda pra pontuação das fases 2/3/4 (se muda algo).
