@@ -1,7 +1,7 @@
 # Fase 2 — Docker
 
 **Quando:** após a aula de 18/08.
-**Vale:** 3,0 pontos na N1 (R1 — implementação de microsserviços com contêineres).
+**Vale:** preparo técnico pra N2 (arquitetura em K8s) — pontuação direta na N1 não confirmada, ver [pendências](../README.md#pendências-fora-do-código).
 **Entrega:** imagem do serviço, compose completo, health checks e testes rodando em container.
 
 ## Por que esta fase existe
@@ -136,4 +136,4 @@ aula de Kubernetes, então entram aqui em vez de esperar a Fase 3.
 
 ## Próxima
 
-[Fase 3 — Kubernetes](fase-3-kubernetes.md), após a aula de 25/08. Mais 3,0 pontos da N1.
+[Fase 3 — Kubernetes](fase-3-kubernetes.md), após a aula de 25/08.

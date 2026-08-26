@@ -1,7 +1,7 @@
 # Fase 4 — Integração e mensageria
 
-**Quando:** mensageria após 15/09; integração mirando a atividade formativa de 22/09 e a N1 em 06/10.
-**Vale:** 4,0 pontos na N1 (R2 — integração via APIs REST **e/ou** mensageria).
+**Quando:** mensageria após 15/09; integração mirando a atividade formativa de 22/09.
+**Vale:** preparo técnico pra N2 — pontuação direta na N1 não confirmada (N1 é um lab do professor, não o repo), ver [pendências](../README.md#pendências-fora-do-código).
 **Entrega:** contrato REST consumido de verdade pelos colegas, spec OpenAPI publicada e consumidor RabbitMQ.
 
 ## Por que esta fase existe
