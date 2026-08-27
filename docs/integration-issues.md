@@ -1,7 +1,7 @@
 # Pendências de integração entre os microsserviços GANJJ
 
 Status: Em acompanhamento
-Última atualização: 2026-08-24
+Última atualização: 2026-08-26
 Idioma: Português (PT-BR)
 
 ## 1. Objetivo
@@ -18,11 +18,37 @@ coisa. IDs `PROMO-*` são específicos deste serviço.
 
 | ID | Tema | Serviços afetados | Situação | Bloqueia agora? |
 | --- | --- | --- | --- | --- |
+| INT-001 | Contrato de JWT (RS256 vs HS256) | Authorization, Order, Cart, Promotion | Confirmado quebrado em Order e Cart | Sim — nenhuma conta real autentica nesses dois hoje |
 | INT-002 | Cotação final do carrinho | Cart, Product, Promotion e Order | Pendente | Não para desenvolvimento; sim para integração final |
 | INT-006 | Autenticação interna | Cart, Order e Promotion | Pendente | Não |
 | PROMO-001 | Consumo de `pedido.confirmado` via RabbitMQ | Order e Promotion | Pendente | Não |
 
 ## 3. Pendências detalhadas
+
+### INT-001 — Contrato de JWT: Order e Cart ainda validam contra o contrato antigo
+
+**Situação atual, confirmada em teste real (2026-08-26):** subi os 9 serviços da org juntos,
+logei de verdade em `authorization` (`POST /auth/login`) e usei o `accessToken` real (RS256,
+claims `sub`/`email`/`role`/`typ`, `iss=ganjj-authorization`) contra cada consumidor:
+
+| Serviço | Resultado | Motivo |
+| --- | --- | --- |
+| `client` | Aceito (404 de negócio, não de auth) | Já migrado pra RS256 com chave pública — mesmo contrato deste ADR 0002 |
+| `promotion` | 401 "Token inválido" | Esperado — `JWT_PUBLIC_KEY` do `.env` local está desatualizada, não é o mesmo par de chaves que o `authorization` gerou nesta sessão (pendência já registrada em `docs/README.md`) |
+| `order` | 401, corpo vazio | `AuthenticationExtensions.cs` usa `SymmetricSecurityKey` (HS256) com `Authentication:Jwt:SigningKey` e espera `isAdmin` booleano — nunca foi migrado pro contrato real |
+| `shopping-cart` | 401 `"Token inválido"` | `utils/jwt.js` usa `jwt.verify(token, JWT_SECRET)` — mesmo problema, HS256 simétrico |
+
+**Impacto:** nenhuma conta real (emitida pelo `authorization`) consegue autenticar em `order` ou
+`shopping-cart` hoje. Não é falta de integração — é incompatibilidade de algoritmo, a mesma
+categoria de problema que este serviço resolveu no
+[ADR 0002](adr/0002-jwt-rs256-chave-estatica.md).
+
+**Recomendação:** aplicar o mesmo ajuste em `order` e `shopping-cart` — RS256 com a chave pública
+de `authorization` lida de env, mapeando `sub`/`role` pros nomes internos que cada serviço já usa
+(`isAdmin` no `order`, o que for equivalente no `shopping-cart`). O `ADR 0002` deste repo serve de
+referência de implementação pros dois.
+
+**Responsáveis:** Rodrigo Alves (Order) e João Liz (Cart).
 
 ### INT-002 — Cotação final do carrinho
 
@@ -72,6 +98,8 @@ uma mensagem reentregue não consumir cupom duas vezes.
 
 ## 4. Checklist
 
+- [ ] Avisar Rodrigo e João Liz sobre o contrato de JWT quebrado em `order` e `shopping-cart`
+      (INT-001).
 - [ ] Confirmar quem chama `/internal/discounts/calculate` e `/internal/coupons/{code}/consume`
       (INT-002).
 - [ ] Confirmar que `INTERNAL_SECRET` é idêntico em `order`, `shopping-cart` e `promotion`
