@@ -9,7 +9,7 @@ Documentação de arquitetura e planejamento do serviço. Escrita para ser lida 
 | [Arquitetura e plano geral](arquitetura.md) | Por que este serviço existe, modelo de dados, camadas, contrato REST, decisões e o porquê de cada uma |
 | [Contrato da API](contrato-api.md) | Referência de endpoints para quem vai **consumir** este serviço (Carrinho, Pedido, Gateway) |
 | [Regras de negócio](regras-de-negocio.md) | As regras de desconto e cupom, com os casos de teste que provam cada uma |
-| [Alinhamento JWT/RS256](alinhamento-jwt-rs256.md) | 🟡 Pendente — o contrato real do serviço de Autorização diverge do assumido; plano técnico pronto, aguardando confirmação |
+| [Alinhamento JWT/RS256](alinhamento-jwt-rs256.md) | ✅ Resolvido — ver [ADR 0002](adr/0002-jwt-rs256-chave-estatica.md); falta só validar com token real do Autorização |
 
 ## Fases de execução
 
@@ -47,5 +47,5 @@ Estas dependem de conversa, não de commit:
 - [ ] Definir com a equipe quem constrói o **microsserviço de suporte** (e-mail/SMS/WhatsApp) e o **API Gateway** — são exigências do professor que nenhum dos 5 serviços de domínio cobre.
 - [ ] Avisar o Rodrigo (Pedido) que ambos usarão MySQL. Não quebra o requisito de "≥2 bancos distintos", mas o grupo deve saber.
 - [ ] Combinar com o Rodrigo o nome da exchange/fila e o payload do evento de pedido confirmado (pré-requisito da Fase 4).
-- [ ] Confirmar com o time de Autorização a chave pública RS256, o formato exato dos claims e os valores de `role` — ver [alinhamento-jwt-rs256.md](alinhamento-jwt-rs256.md).
+- [ ] Pedir ao Eduardo (Autorização) a chave pública real de deploy pra colar em `JWT_PUBLIC_KEY` e testar ponta a ponta — o contrato já está fechado ([ADR 0002](adr/0002-jwt-rs256-chave-estatica.md)), falta só essa validação com token real.
 - [ ] Entender o formato exato da N1 agora que é um lab do professor, não o repo individual — o que isso muda pra pontuação das fases 2/3/4 (se muda algo).
