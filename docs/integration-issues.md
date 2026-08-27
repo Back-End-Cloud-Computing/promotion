@@ -1,7 +1,7 @@
 # Pendências de integração entre os microsserviços GANJJ
 
 Status: Em acompanhamento
-Última atualização: 2026-08-26
+Última atualização: 2026-08-27
 Idioma: Português (PT-BR)
 
 ## 1. Objetivo
@@ -22,6 +22,8 @@ coisa. IDs `PROMO-*` são específicos deste serviço.
 | INT-002 | Cotação final do carrinho | Cart, Product, Promotion e Order | Pendente | Não para desenvolvimento; sim para integração final |
 | INT-006 | Autenticação interna | Cart, Order e Promotion | Pendente | Não |
 | PROMO-001 | Consumo de `pedido.confirmado` via RabbitMQ | Order e Promotion | Pendente | Não |
+| INT-009 | Porta errada do Product nos consumidores | Order, Cart, Product | Confirmado (código) | Sim — Order↔Product e Cart↔Product não conectam sem sobrescrever a env var |
+| INT-010 | `shopping-cart` sem `.env.example` no repo | Cart | Confirmado (repo) | Não bloqueia outros serviços, mas quebra o setup de quem clona `shopping-cart` do zero |
 
 ## 3. Pendências detalhadas
 
@@ -96,6 +98,53 @@ uma mensagem reentregue não consumir cupom duas vezes.
 
 **Responsáveis:** Rodrigo Alves (Order) e Lucas Stopinski (Promotion).
 
+### INT-009 — Order e Cart apontam pra porta errada do Product
+
+**Situação atual, confirmada lendo os três repos:** `order/.env.example` e
+`shopping-cart/.env.example` têm o mesmo default —
+`PRODUCT_SERVICE_URL=http://host.docker.internal:3002` — mas `product/docker-compose.yml`
+publica o serviço em `8000:8000`, não em `3002`. Nenhum dos dois arquivos foi atualizado depois
+que essa porta mudou (ou nunca foi `3002` de verdade e o default nasceu errado).
+
+**Impacto:** sem sobrescrever `PRODUCT_SERVICE_URL` manualmente, toda chamada de `order` ou
+`shopping-cart` pro `product` cai em connection refused, não em erro de negócio — não dá pra saber
+que o resto da integração funciona sem primeiro descobrir esse detalhe. Confirmado no teste com os
+9 serviços juntos desta sessão: só depois de sobrescrever pra `:8000` que
+`shopping-cart → product` e `order → product` responderam de verdade.
+
+**Recomendação:** `product` (João Correa) confirma qual é a porta canônica publicada — hoje é
+`8000` — e `order` (Rodrigo) e `shopping-cart` (João Liz) atualizam o default nos respectivos
+`.env.example` pra bater.
+
+**Responsáveis:** João Correa (Product), Rodrigo Alves (Order) e João Liz (Cart).
+
+**Atualização 2026-08-27:** `product` removeu o próprio `docker-compose.yml` do repo (commit
+`e29464d`, "split product-service out of the vector/embedding/LLM monolith") — não dá mais pra
+confirmar a porta publicada lendo esse arquivo. O `README.md` do `product` ainda mostra a porta
+`8000` no diagrama de arquitetura, então o valor não mudou, só a forma de verificar. Vale
+reconfirmar com o João Correa se `product` vai continuar publicando `8000` sozinho ou se isso
+passa a depender de um compose no nível da organização (o README já fala em "orquestrado a
+partir da raiz do repo, junto com os outros serviços" — esse arquivo raiz ainda não existe).
+
+### INT-010 — `shopping-cart` sem `.env.example` versionado
+
+**Situação atual, confirmada lendo o repo (2026-08-27):** `shopping-cart/.gitignore` tem o
+comentário `# O .env.example é versionado de propósito — serve de template.` e a regra
+`!.env.example` pra garantir isso — mas o arquivo não existe no working tree hoje. O próprio
+`README.md` do `shopping-cart` instrui `cp .env.example .env` na seção "Rodando", então o passo
+de setup documentado quebra pra quem clona o repo do zero.
+
+**Impacto:** não afeta quem já tem um `.env` local funcionando (nosso caso, testado no geralzão
+desta sessão), mas qualquer pessoa nova no time — ou o professor rodando o repo pra avaliar —
+esbarra nisso no primeiro passo. A tabela de variáveis no README (`PORT`, `REDIS_URL`,
+`REDIS_PREFIX`, `CART_TTL_SECONDS`, `JWT_SECRET`, `PRODUCT_SERVICE_URL`, `INTERNAL_SECRET`) ainda
+serve de referência enquanto o arquivo não volta.
+
+**Recomendação:** João Liz recria o `.env.example` a partir da tabela do próprio README (ele já
+documenta os 7 valores necessários) e comita.
+
+**Responsável:** João Liz (Cart).
+
 ## 4. Checklist
 
 - [ ] Avisar Rodrigo e João Liz sobre o contrato de JWT quebrado em `order` e `shopping-cart`
@@ -106,3 +155,8 @@ uma mensagem reentregue não consumir cupom duas vezes.
       (INT-006).
 - [ ] Fechar contrato da mensageria `pedido.confirmado` com Order (PROMO-001).
 - [ ] Implementar idempotência do consumidor de `pedido.confirmado` (PROMO-001).
+- [ ] Avisar João Correa, Rodrigo e João Liz sobre a porta errada do Product em
+      `PRODUCT_SERVICE_URL` (INT-009).
+- [ ] Confirmar com João Correa se `product` mantém a porta `8000` sozinho ou passa a depender
+      de um compose raiz da organização, já que o `docker-compose.yml` do repo sumiu (INT-009).
+- [ ] Avisar João Liz que o `.env.example` do `shopping-cart` sumiu do repo (INT-010).
