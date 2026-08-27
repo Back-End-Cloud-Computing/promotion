@@ -18,20 +18,17 @@ não de construção.
 
 ### 1. Alinhar o JWT com o serviço de Autorização
 
-> **Atualização (24/08):** as suposições abaixo eram do repo base e **não batem** com o que o serviço de
-> Autorização emite de verdade — não é só o segredo, o algoritmo e o formato do claim também mudaram. Detalhe
-> completo e plano técnico em [alinhamento-jwt-rs256.md](../alinhamento-jwt-rs256.md), pendente de confirmação
-> com o time de Autorização antes de implementar.
+> **Status: ✅ resolvido** — ver [ADR 0002](../adr/0002-jwt-rs256-chave-estatica.md). O contrato hipotético
+> original (HS256, `{id, email, isAdmin}`) não batia com o que Autorização emite de verdade; o problema e a
+> decisão final estão documentados em [alinhamento-jwt-rs256.md](../alinhamento-jwt-rs256.md).
 
-A verificação de JWT existe desde a Fase 1, mas com um contrato hipotético. O que descobrimos até agora:
+`VerifyJwt.php` já implementa o contrato real: RS256 com `JWT_PUBLIC_KEY` de env, confere `iss` e `typ`, mapeia
+`sub→id` e `role→isAdmin`. Coberto por `tests/Feature/AuthenticationTest.php` (token válido, assinatura errada,
+expirado, sem admin, emissor errado, tipo errado, chave ausente, sem chamada de rede).
 
-- ~~O `JWT_SECRET` é o mesmo dos dois lados.~~ Não existe segredo simétrico — Autorização assina com RS256
-  (par de chaves). `promotion` vai ler a chave pública direto de uma var de ambiente (`JWT_PUBLIC_KEY`), sem
-  endpoint JWKS — mais simples enquanto não há rotação de chave confirmada.
-- ~~O payload é mesmo `{id, email, isAdmin}`.~~ O payload real é `{sub, email, role}` — `role` é string, não
-  o booleano `isAdmin` que o código assume hoje.
-- ~~O algoritmo bate (HS256).~~ É RS256.
-- Token expirado devolve 401 com mensagem clara, não 500 — isso continua valendo e já está coberto.
+O que falta não é código: confirmar que o `.env` de deploy tem a `JWT_PUBLIC_KEY` real (a que
+`GET /auth/public-key` do Autorização devolve) e, quando possível, testar ponta a ponta com um token emitido
+de verdade pelo serviço do Eduardo.
 
 > **Nunca aceitar `alg: none`.** É a falha clássica de JWT: uma biblioteca mal configurada aceita um token sem
 > assinatura e qualquer pessoa vira admin. A `firebase/php-jwt` exige o algoritmo explícito no `decode()`, o
@@ -111,8 +108,9 @@ serviço e o porquê de cada uma estão em [arquitetura.md](../arquitetura.md) �
 
 ## Concluída quando
 
-- [ ] JWT validado contra token real do serviço de Cliente
-- [ ] Token adulterado, expirado e sem admin recusados corretamente
+- [x] JWT validado contra o contrato real do serviço de Autorização (RS256, `sub`/`role`, `iss`/`typ`) —
+  falta só o teste ponta a ponta com token emitido de verdade
+- [x] Token adulterado, expirado e sem admin recusados corretamente
 - [ ] `/internal` não alcançável de fora do cluster
 - [ ] `APP_DEBUG=false` fora do local
 - [ ] Métricas expostas (se a equipe adotar Prometheus)
