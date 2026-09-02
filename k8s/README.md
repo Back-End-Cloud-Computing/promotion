@@ -30,22 +30,36 @@ kubectl create secret generic promotion-secrets \
 Precisa rodar de novo sempre que o cluster for recriado (`minikube delete`) — o Secret não é gerenciado pelo
 kustomize, só o resto (`kubectl apply -k k8s/`).
 
-## 3. Subir o resto
+## 3. Ativar o Ingress Controller
+
+O `k8s/ingress.yaml` depende do addon de Ingress do minikube (NGINX Ingress Controller):
+
+```bash
+minikube addons enable ingress
+kubectl get pods -n ingress-nginx -w   # aguardar Running antes do apply
+```
+
+## 4. Subir o resto
 
 ```bash
 kubectl apply -k k8s/
 kubectl get pods -w
 ```
 
-## 4. Testar
+## 5. Testar
 
 ```bash
 kubectl port-forward svc/promotion 8000:8000 &
 curl localhost:8000/health
 curl localhost:8000/health/ready
+
+# via Ingress, sem port-forward:
+curl http://$(minikube ip)/health
+# se o IP do minikube não for alcançável direto do host, use `minikube tunnel`
+# em outro terminal e troque pra `curl localhost/health`
 ```
 
-## 5. Provar autorrecuperação
+## 6. Provar autorrecuperação
 
 ```bash
 kubectl get pods
