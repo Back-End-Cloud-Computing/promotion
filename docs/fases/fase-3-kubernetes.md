@@ -1,6 +1,6 @@
 # Fase 3 — Kubernetes
 
-**Quando:** após a aula de 25/08 (Ingress após 01/09).
+**Quando:** após a aula de 25/08.
 **Vale:** preparo técnico pra N2 (arquitetura em K8s) — pontuação direta na N1 não confirmada, ver [pendências](../README.md#pendências-fora-do-código).
 **Entrega:** manifests, probes ligadas aos health checks, configuração externalizada e segredos fora do
 repositório.
@@ -54,6 +54,7 @@ aparecem quando a segunda réplica sobe.
 | `service.yaml` | `ClusterIP` expondo a porta 8000 |
 | `configmap.yaml` | Config não sensível (`APP_NAME`, `DB_HOST`, `APP_TIMEZONE`, `JWT_PUBLIC_KEY`) |
 | `mysql.yaml` | Banco com PVC |
+| `ingress.yaml` | Exposição HTTP externa via NGINX Ingress Controller (minikube) |
 
 Sem `secret.yaml` — nem como template. "Segredos fora do repositório" é literal aqui: nenhum manifest
 `kind: Secret` fica versionado, nem com placeholder. As chaves esperadas ficam documentadas em texto no
@@ -95,12 +96,21 @@ uma réplica de MySQL para fins acadêmicos: Deployment + PVC entrega o mesmo re
 Se for o caso, trocar — é uma exigência acadêmica que justifica a complexidade extra. Pergunta barata, ponto
 caro.
 
-### 6. Ingress — após 01/09
+### 6. Ingress
 
-`k8s/ingress.yaml` expondo as rotas sob o Ingress controller compartilhado da equipe.
+`k8s/ingress.yaml` expõe o Service `promotion` (porta 8000) via o NGINX Ingress Controller do minikube
+(addon `ingress`), seguindo o Lab06 (steps 1-6) do devlabs — só a parte local, sem AWS/EKS.
 
-Depende de alinhamento: quem sobe o controller comum, qual host, qual prefixo de path cabe a cada serviço.
-Esta é a primeira tarefa da fase que não roda sozinha.
+```bash
+minikube addons enable ingress
+kubectl get pods -n ingress-nginx   # aguardar Running
+kubectl apply -k k8s/
+kubectl get ingress
+curl http://$(minikube ip)/health   # ou `minikube tunnel` + curl localhost, se o IP não for alcançável direto
+```
+
+Ingress compartilhado entre serviços da equipe (host/path por serviço) fica fora deste manifest — aqui é só
+a exposição do `promotion` sozinho, suficiente para fechar o padrão que o lab ensina.
 
 ## Verificação
 
@@ -125,7 +135,7 @@ tráfego.
 - [x] Endpoint responde via `port-forward`
 - [x] Config vem de ConfigMap; segredos de Secret criado fora do git
 - [x] Pod deletado é recriado sozinho
-- [ ] Ingress funcionando (após 01/09, depende da equipe)
+- [x] Ingress funcionando (`promotion-ingress`, via addon do minikube)
 
 ## Riscos
 
