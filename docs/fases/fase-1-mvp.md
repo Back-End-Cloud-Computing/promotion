@@ -98,17 +98,23 @@ campanha vigente, cupons em estados variados (válido, expirado, esgotado, inati
 > Os cupons em estado inválido não são enfeite — são o que permite demonstrar as regras de recusa na
 > apresentação sem precisar mexer no relógio do sistema.
 
-### 7. Coleção do Postman/Insomnia
+### 7. Testes manuais via OpenAPI
 
-Versionada no repositório. A disciplina exige teste por ferramenta de requisição, e uma coleção pronta é a
-diferença entre demonstrar em dois minutos e digitar JSON na frente da turma.
+Sem coleção Postman/Insomnia — nenhum dos 6 labs do professor exige isso no checklist oficial. `/docs/api`
+(Scramble, ver [Fase 2](fase-2-docker.md#addendum--openapi-e-publicação-de-imagem)) já serve com **Try it out**
+habilitado e Bearer auth documentado nas rotas com `jwt`, cobrindo o CRUD dos três recursos e `/api/sale` sem
+precisar digitar JSON na frente da turma. `/internal/*` fica fora do Swagger por design (fora do prefixo `api`)
+— continua sendo demonstrado por `curl`, como na tabela abaixo.
+
+> Swagger só abre livre em `APP_ENV=local` (`RestrictedDocsAccess`, do próprio Scramble). Demonstrar fora do
+> local (ex: no cluster K8s, `APP_ENV=production`) exige definir a Gate `viewApiDocs` antes.
 
 ## Verificação
 
 | O quê | Como | Esperado |
 |---|---|---|
 | Regra de negócio | `./vendor/bin/pest` | Os casos R1–R16 passam |
-| CRUD | Coleção do Postman | Os cinco verbos respondem nos três recursos |
+| CRUD | `/docs/api` (Try it out) | Os cinco verbos respondem nos três recursos |
 | Compatibilidade | `GET /api/sale?categoria=Inverno` | Mesmo shape do repo base |
 | Cálculo interno | `curl -H "x-internal-secret: ..." -d @exemplo.json .../internal/descontos/calcular` | Detalhamento bate com a conta feita à mão |
 | Sem segredo | Mesma chamada sem o header | 403 |
@@ -120,13 +126,13 @@ regra pretendida, e não uma implementação internamente consistente do erro.
 
 ## Concluída quando
 
-- [ ] `./vendor/bin/pest` verde com os 16 casos de regra de negócio
-- [ ] Os três recursos respondem aos cinco verbos
-- [ ] `POST /internal/descontos/calcular` devolve detalhamento correto
-- [ ] Cupom inválido devolve 200 com motivo, não 4xx
-- [ ] Rotas `/internal` recusam sem `x-internal-secret`
-- [ ] Coleção do Postman versionada
-- [ ] Seeders populam um cenário demonstrável
+- [x] `./vendor/bin/pest` verde com os 16 casos de regra de negócio (47 testes no total, ver Fase 2)
+- [x] Os três recursos respondem aos cinco verbos (`apiResource` em `campaigns`, `promotions`, `coupons`)
+- [x] `POST /internal/descontos/calcular` devolve detalhamento correto
+- [x] Cupom inválido devolve 200 com motivo, não 4xx
+- [x] Rotas `/internal` recusam sem `x-internal-secret`
+- [x] Testes manuais via `/docs/api` (Swagger/Scramble) — sem coleção Postman, decisão da equipe
+- [x] Seeders populam um cenário demonstrável (`database/seeders/DatabaseSeeder.php`)
 
 ## Riscos
 
