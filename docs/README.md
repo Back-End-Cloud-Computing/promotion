@@ -49,3 +49,5 @@ Estas dependem de conversa, não de commit:
 - [ ] Combinar com o Rodrigo o nome da exchange/fila e o payload do evento de pedido confirmado (pré-requisito da Fase 4).
 - [ ] Pedir ao Eduardo (Autorização) a chave pública real de deploy pra colar em `JWT_PUBLIC_KEY` e testar ponta a ponta — o contrato já está fechado ([ADR 0002](adr/0002-jwt-rs256-chave-estatica.md)), falta só essa validação com token real.
 - [ ] Entender o formato exato da N1 agora que é um lab do professor, não o repo individual — o que isso muda pra pontuação das fases 2/3/4 (se muda algo).
+- [ ] Definir a Gate `viewApiDocs` (Scramble) se a demonstração da API for feita fora de `APP_ENV=local` — sem
+  isso, `/docs/api` devolve 403 no cluster K8s (`APP_ENV=production`). Decisão: testes manuais via OpenAPI, sem coleção Postman (ver [Fase 1](fases/fase-1-mvp.md#7-testes-manuais-via-openapi)).
