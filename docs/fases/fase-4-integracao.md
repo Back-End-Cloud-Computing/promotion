@@ -15,33 +15,19 @@ mensageria exige combinar nome de fila e formato de payload com outra pessoa.
 
 ## Tarefas
 
-### 1. OpenAPI publicada
+### 1. Integração REST com Carrinho e Pedido
 
-```bash
-composer require dedoc/scramble
-```
+OpenAPI já foi antecipada pra Fase 2 ([addendum](fase-2-docker.md#addendum--openapi-e-publicação-de-imagem)) —
+`/docs/api` e `/docs/api.json` já estão no ar via Scramble. Os colegas já têm a spec pra integrar; nada a fazer
+aqui além de manter os controllers/FormRequests atualizados, que é o que a spec lê.
 
-Scramble gera a spec a partir dos FormRequests, Resources e type hints que já existem — sem anotação manual.
-Serve em `/docs/api` e `/docs/api.json`.
-
-A alternativa (`zircote/swagger-php`) exige anotar cada controller com PHPDoc, o que duplica em comentário o
-que o código já declara — e comentário duplicado é comentário que desatualiza.
-
-> O repo base é a prova do problema: a spec do gateway é um stub vazio enquanto a spec real está num arquivo
-> estático desatualizado. Documentação que não é gerada do código diverge do código.
-
-**Por que isso vem primeiro:** os colegas precisam da spec para integrar. Publicar antes de combinar qualquer
-coisa reduz a conversa a "está em `/docs/api`".
-
-### 2. Integração REST com Carrinho e Pedido
-
-`POST /internal/descontos/calcular` já existe desde a Fase 1. O trabalho aqui é fazer o consumo acontecer de
+`POST /internal/discounts/calculate` já existe desde a Fase 1. O trabalho aqui é fazer o consumo acontecer de
 verdade:
 
 | Serviço | Chama | Quando |
 |---|---|---|
-| Carrinho (João Liz, Node) | `/internal/descontos/calcular` | A cada mudança do carrinho — idempotente, não consome uso |
-| Pedido (Rodrigo, C#) | `/internal/descontos/calcular` + `/internal/cupons/{codigo}/consumir` | No fechamento |
+| Carrinho (João Liz, Node) | `/internal/discounts/calculate` | A cada mudança do carrinho — idempotente, não consome uso |
+| Pedido (Rodrigo, C#) | `/internal/discounts/calculate` + `/internal/coupons/{code}/consume` | No fechamento |
 
 O que precisa ser combinado:
 
@@ -50,7 +36,7 @@ O que precisa ser combinado:
 - Que o cálculo **não** consome uso e o fechamento **sim** — se o Carrinho chamar `consumir`, um cupom de 500
   usos se esgota sem nenhuma venda.
 
-### 3. Consumidor RabbitMQ
+### 2. Consumidor RabbitMQ
 
 **O evento:** o serviço de Pedido publica `pedido.confirmado` com `{pedido_id, cupom_codigo, itens}`. Este
 serviço consome e incrementa `usos` do cupom.
@@ -77,7 +63,7 @@ processado, ou tornar o incremento condicional a ele.
 > Este é o bug clássico de mensageria e não aparece em teste feliz — aparece quando a rede oscila e o broker
 > reentrega.
 
-### 4. Teste ponta a ponta
+### 3. Teste ponta a ponta
 
 Antes de 22/09: carrinho monta pedido, chama o cálculo, fecha, evento publicado, uso incrementado. Com os
 serviços reais dos colegas, no cluster.
@@ -98,7 +84,7 @@ Os dois últimos são os que provam que a mensageria foi entendida, não só lig
 
 ## Concluída quando
 
-- [ ] OpenAPI publicada e acessível
+- [x] OpenAPI publicada e acessível (antecipada pra Fase 2)
 - [ ] Carrinho consome o cálculo com sucesso
 - [ ] Pedido consome e o uso incrementa
 - [ ] Consumidor RabbitMQ processa `pedido.confirmado`
