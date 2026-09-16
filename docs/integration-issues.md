@@ -1,7 +1,7 @@
 # Pendências de integração entre os microsserviços GANJJ
 
 Status: Em acompanhamento
-Última atualização: 2026-08-30
+Última atualização: 2026-09-16
 Idioma: Português (PT-BR)
 
 ## 1. Objetivo
@@ -24,8 +24,31 @@ coisa. IDs `PROMO-*` são específicos deste serviço.
 | PROMO-001 | Consumo de `pedido.confirmado` via RabbitMQ | Order e Promotion | Pendente | Não |
 | INT-009 | Porta errada do Product nos consumidores | Order, Cart, Product | Confirmado (código) | Sim — Order↔Product e Cart↔Product não conectam sem sobrescrever a env var |
 | INT-010 | `shopping-cart` sem `.env.example` no repo | Cart | Confirmado (repo) | Não bloqueia outros serviços, mas quebra o setup de quem clona `shopping-cart` do zero |
+| PROMO-002 | Validar JWT RS256 ponta a ponta | Authorization, Order, Cart, Promotion | Pendente (teste) | Não — mas fecha de vez o risco de INT-001 |
 
-## 3. Pendências detalhadas
+## 3. Prontidão N1/N2 por serviço
+
+Cruza os dois eixos da rubrica de N2 (10/11, 40% — [arquitetura.md](arquitetura.md), "Arquitetura
+em K8s 4,0 · Segurança e observabilidade 3,0") com o estado real de cada repo, pra não descobrir
+gap de infraestrutura na véspera da apresentação. A rubrica de N1 ("Contêineres 3,0 · Integração
+4,0 · K8s 3,0", também em [arquitetura.md](arquitetura.md)) é a rubrica antiga do repositório
+individual — **não está confirmada**, porque N1 virou um lab aplicado em sala pelo professor,
+separado do repo. Este quadro mede prontidão real de infraestrutura, não pontuação garantida de
+N1.
+
+| Serviço | K8s | Docker/Compose | JWT RS256 | Observação |
+| --- | --- | --- | --- | --- |
+| authorization | ✅ | ✅ | é o emissor | — |
+| client | ✅ | ✅ | ✅ valida | — |
+| order | ✅ (16/09) | ⚠️ | ✅ valida | tem `compose.yaml`, não `docker-compose.yml`; K8s só local (Minikube, [ADR 0007](../../order/docs/adr/0007-local-kubernetes-deployment.md)) — Deployment 3 réplicas + StatefulSet SQL Server, sem Ingress, exposto via `kubectl port-forward` |
+| product | ❌ | ❌ | ❌ sem auth | inclui `llm-provider`, `embedding-reranking` e `vector-db` — nenhum dos três é chamado fora de `product` (coupling rule, `product/README.md`: "this service knows embedding-reranking... and llm-provider... plus a single direct call to vector-db..."), então não entram como linhas próprias; se `product` não tem K8s/JWT, o guarda-chuva inteiro não tem |
+| promotion | ✅ | ✅ | ✅ | falta só o teste ponta a ponta — ver PROMO-002 |
+| shopping-cart | ✅ (08/09) | ✅ | ✅ valida | — |
+
+Observabilidade (Prometheus/métricas): nenhum repo implementou. Não é atraso — a fase 5 do
+cronograma só começa após 20/10.
+
+## 4. Pendências detalhadas
 
 ### INT-001 — Contrato de JWT: Order e Cart migraram pra RS256
 
@@ -53,6 +76,34 @@ mudanças.
 
 **Responsáveis:** Rodrigo Alves (Order) e João Liz (Cart) — mudança já entregue, só falta a
 validação ponta a ponta.
+
+### PROMO-002 — Validar JWT RS256 ponta a ponta com token real do authorization
+
+**Situação atual:** o código dos dois lados (`order`, `shopping-cart`) já foi corrigido — ver
+INT-001 acima. O teste multi-serviço de 26/08 é anterior a essas correções e nunca foi
+re-executado depois delas.
+
+**Checklist do teste:**
+
+- [ ] `GET /auth/public-key` no `authorization`, pegar o PEM.
+- [ ] Configurar `JWT_PUBLIC_KEY` no `.env` do `promotion` com esse PEM.
+- [ ] Subir `authorization` + `promotion`.
+- [ ] `POST /auth/login` no `authorization`, pegar um `accessToken` real (RS256, claims
+      `sub`/`email`/`role`/`typ`, `iss=ganjj-authorization`).
+- [ ] Chamar uma rota admin do `promotion` (campaigns/promotions/coupons) com
+      `Authorization: Bearer <token>` e confirmar 200 em vez de 401.
+- [ ] Confirmar o mapeamento de claims: `sub→id`, `role==='ADMIN'→isAdmin` (comparação exata
+      maiúscula); `role=CLIENTE` sem acesso admin.
+- [ ] Confirmar `iss==='ganjj-authorization'` e `typ==='access'` — um refresh token não deve
+      passar.
+- [ ] Exercitar os casos de erro: `JWT_PUBLIC_KEY` vazia → 500; token expirado → 401; assinatura
+      inválida → 401; formato inválido → 401.
+
+**Nota:** nenhuma env var nova além de `JWT_PUBLIC_KEY`, nenhuma dependência nova (`firebase/php-jwt`
+já instalado) — não é um bloqueio de escopo, só falta executar.
+
+**Responsáveis:** Lucas Stopinski (Promotion) executa o teste; Rodrigo Alves (Order) e João Liz
+(Cart) só precisam ser avisados do resultado, já que o código do lado deles não muda.
 
 ### INT-002 — Cotação final do carrinho
 
@@ -147,10 +198,35 @@ documenta os 7 valores necessários) e comita.
 
 **Responsável:** João Liz (Cart).
 
-## 4. Checklist
+### PROMO-003 — Ingress do promotion expõe /internal fora do cluster
+
+**Situação atual, confirmada lendo o repo:** `k8s/ingress.yaml` só tem uma regra `path: /` com
+`pathType: Prefix` apontando pro serviço inteiro — não há exclusão de `/internal/*`. O checklist
+de `docs/fases/fase-5-seguranca.md` ("`/internal` não alcançável de fora do cluster") segue em
+aberto por causa disso; a exigência já estava documentada lá ("rotas `/internal` fora do Ingress
+público").
+
+**Nota lateral:** `APP_DEBUG=false` já está correto em `k8s/configmap.yaml` — só o ingress está
+pendente, não é um problema de configuração geral.
+
+**Impacto:** hoje `/internal/discounts/calculate` e `/internal/coupons/{code}/consume` (os
+mesmos endpoints de INT-002/INT-006) são alcançáveis publicamente se alguém souber a URL e o
+`x-internal-secret` — a exposição de rede e o segredo são defesas independentes, então esse gap
+reduz a segurança mesmo que INT-006 seja resolvido.
+
+**Recomendação:** ajustar `ingress.yaml` pra excluir `/internal` (ex. anotação de
+`configuration-snippet` do NGINX negando o path, ou dividir em duas regras). Decisão de
+implementação fica pra quando isso for corrigido de fato — não faz parte deste levantamento.
+
+**Responsável:** Lucas Stopinski (Promotion) — único responsável, sem dependência de outro
+serviço.
+
+## 5. Checklist
 
 - [x] Avisar Rodrigo e João Liz sobre o contrato de JWT quebrado em `order` e `shopping-cart`
       (INT-001) — os dois já migraram pra RS256, falta só validar ponta a ponta.
+- [ ] Rodar o teste ponta a ponta do JWT RS256 com token real do authorization (PROMO-002).
+- [ ] Corrigir o Ingress do promotion pra excluir /internal do acesso externo (PROMO-003).
 - [ ] Confirmar quem chama `/internal/discounts/calculate` e `/internal/coupons/{code}/consume`
       (INT-002).
 - [ ] Confirmar que `INTERNAL_SECRET` é idêntico em `order`, `shopping-cart` e `promotion`
