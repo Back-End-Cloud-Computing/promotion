@@ -1,7 +1,7 @@
 # Pendências de integração entre os microsserviços GANJJ
 
 Status: Em acompanhamento
-Última atualização: 2026-09-16
+Última atualização: 2026-09-28
 Idioma: Português (PT-BR)
 
 ## 1. Objetivo
@@ -41,7 +41,7 @@ N1.
 | authorization | ✅ | ✅ | é o emissor | — |
 | client | ✅ | ✅ | ✅ valida | — |
 | order | ✅ (16/09) | ⚠️ | ✅ valida | tem `compose.yaml`, não `docker-compose.yml`; K8s só local (Minikube, [ADR 0007](../../order/docs/adr/0007-local-kubernetes-deployment.md)) — Deployment 3 réplicas + StatefulSet SQL Server, sem Ingress, exposto via `kubectl port-forward` |
-| product | ❌ | ❌ | ❌ sem auth | inclui `llm-provider`, `embedding-reranking` e `vector-db` — nenhum dos três é chamado fora de `product` (coupling rule, `product/README.md`: "this service knows embedding-reranking... and llm-provider... plus a single direct call to vector-db..."), então não entram como linhas próprias; se `product` não tem K8s/JWT, o guarda-chuva inteiro não tem |
+| product | ✅ (28/09) | ✅ | ✅ valida | inclui `llm-provider`, `embedding-reranking` e `vector-db` — nenhum dos três é chamado fora de `product` (coupling rule, `product/README.md`), então não entram como linhas próprias; os 4 pegaram K8s + Ingress + JWT RS256 (HTTPBearer contra a chave pública do `authorization`) juntos em 28/09, `product` publica `:8000` (confirmado, bate com INT-009) |
 | promotion | ✅ | ✅ | ✅ | falta só o teste ponta a ponta — ver PROMO-002 |
 | shopping-cart | ✅ (08/09) | ✅ | ✅ valida | — |
 

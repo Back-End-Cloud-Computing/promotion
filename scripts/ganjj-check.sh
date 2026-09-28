@@ -43,19 +43,19 @@ check_docs() {
 
   # INT-001 — order/shopping-cart ainda em HS256?
   order_auth="$ORG_DIR/order/src/Ganjj.Order.Api/Authentication/AuthenticationExtensions.cs"
-  if [ -f "$order_auth" ] && grep -q "SymmetricSecurityKey" "$order_auth"; then
-    echo "- INT-001 (order): ainda HS256 — doc segue válida"
-  elif [ -f "$order_auth" ]; then
-    echo "- INT-001 (order): DRIFT — SymmetricSecurityKey sumiu de AuthenticationExtensions.cs, checar se migrou pra RS256"
+  if [ -f "$order_auth" ] && grep -q "RsaSecurityKey" "$order_auth"; then
+    echo "- INT-001 (order): migrado pra RS256 — doc alinhada"
+  elif [ -f "$order_auth" ] && grep -q "SymmetricSecurityKey" "$order_auth"; then
+    echo "- INT-001 (order): ainda HS256 — doc desatualizada"
   else
     echo "- INT-001 (order): arquivo não encontrado, checar path"
   fi
 
   cart_jwt="$ORG_DIR/shopping-cart/utils/jwt.js"
-  if [ -f "$cart_jwt" ] && grep -q "JWT_SECRET" "$cart_jwt"; then
-    echo "- INT-001 (shopping-cart): ainda HS256 — doc segue válida"
-  elif [ -f "$cart_jwt" ]; then
-    echo "- INT-001 (shopping-cart): DRIFT — JWT_SECRET sumiu de utils/jwt.js, checar se migrou pra RS256"
+  if [ -f "$cart_jwt" ] && grep -q "RS256" "$cart_jwt"; then
+    echo "- INT-001 (shopping-cart): migrado pra RS256 — doc alinhada"
+  elif [ -f "$cart_jwt" ] && grep -q "JWT_SECRET" "$cart_jwt"; then
+    echo "- INT-001 (shopping-cart): ainda HS256 — doc desatualizada"
   else
     echo "- INT-001 (shopping-cart): arquivo não encontrado, checar path"
   fi
@@ -81,7 +81,6 @@ check_docs() {
 # (nothing here is committed to any repo — env vars and one compose override file only).
 run_integration() {
   echo "## Subindo os 9 serviços (integração real)"
-  OVERRIDE="/tmp/ganjj-promotion-port-override.yml"
   wait_ok() {
     local url="$1" max="$2" i=0
     while [ $i -lt "$max" ]; do
@@ -95,9 +94,11 @@ run_integration() {
 
   ( cd "$ORG_DIR/authorization" && [ -f keys/private.pem ] || ./scripts/generate-keys.sh ) >/dev/null 2>&1
   ( cd "$ORG_DIR/authorization" && docker compose up -d --build ) >/tmp/gc-authorization.log 2>&1
-  wait_ok "http://localhost:8081/auth/public-key" 240 && echo "- authorization: PASS" || echo "- authorization: FAIL (ver /tmp/gc-authorization.log)"
+  AUTH_PORT=$(cd "$ORG_DIR/authorization" && docker compose port authorization 8081 2>/dev/null | awk -F: '{print $NF}')
+  AUTH_PORT="${AUTH_PORT:-8081}"
+  wait_ok "http://localhost:${AUTH_PORT}/auth/public-key" 240 && echo "- authorization: PASS (porta :${AUTH_PORT})" || echo "- authorization: FAIL (ver /tmp/gc-authorization.log)"
 
-  ( cd "$ORG_DIR/client" && ./scripts/fetch-public-key.sh ) >/dev/null 2>&1
+  ( cd "$ORG_DIR/client" && AUTH_URL="http://localhost:${AUTH_PORT}" ./scripts/fetch-public-key.sh ) >/dev/null 2>&1
   ( cd "$ORG_DIR/client" && docker compose up -d --build ) >/tmp/gc-client.log 2>&1
   wait_ok "http://localhost:8082/health" 90 && echo "- client: PASS" || echo "- client: FAIL (ver /tmp/gc-client.log)"
 
@@ -105,44 +106,28 @@ run_integration() {
   ( cd "$ORG_DIR/product" && docker compose up -d --build ) >/tmp/gc-product.log 2>&1
   wait_ok "http://localhost:8000/health" 150 && echo "- product: PASS" || echo "- product: FAIL (ver /tmp/gc-product.log)"
 
-  cat > "$OVERRIDE" <<'EOF'
-services:
-  promotion-app:
-    ports: !override
-      - "8005:8000"
-EOF
-  ( cd "$ORG_DIR/promotion" && docker compose -f docker-compose.yml -f docker-compose.override.yml -f "$OVERRIDE" up -d --build ) >/tmp/gc-promotion.log 2>&1
-  wait_ok "http://localhost:8005/health" 90 && echo "- promotion: PASS (remapeado pra :8005 só neste teste)" || echo "- promotion: FAIL (ver /tmp/gc-promotion.log)"
+  ( cd "$ORG_DIR/promotion" && docker compose up -d --build ) >/tmp/gc-promotion.log 2>&1
+  PROMO_PORT=$(cd "$ORG_DIR/promotion" && docker compose port promotion-app 8000 2>/dev/null | awk -F: '{print $NF}')
+  PROMO_PORT="${PROMO_PORT:-8005}"
+  wait_ok "http://localhost:${PROMO_PORT}/health" 90 && echo "- promotion: PASS (porta :${PROMO_PORT})" || echo "- promotion: FAIL (ver /tmp/gc-promotion.log)"
 
-  export PRODUCT_SERVICE_URL="http://host.docker.internal:8000"
   ( cd "$ORG_DIR/shopping-cart" && docker compose up -d --build ) >/tmp/gc-shopping-cart.log 2>&1
   wait_ok "http://localhost:3003/health" 90 && echo "- shopping-cart: PASS" || echo "- shopping-cart: FAIL (ver /tmp/gc-shopping-cart.log)"
 
   ( cd "$ORG_DIR/order" && docker compose up -d --build ) >/tmp/gc-order.log 2>&1
   wait_ok "http://localhost:3004/health/live" 150 && echo "- order: PASS" || echo "- order: FAIL (ver /tmp/gc-order.log)"
-  unset PRODUCT_SERVICE_URL
 
-  VDB_ENV="/tmp/ganjj-vector-db.env"
-  cp "$ORG_DIR/vector-db/.env.example" "$VDB_ENV"
-  sed -i '' 's#CHROMA_HOST=chromadb#CHROMA_HOST=host.docker.internal#; s#CHROMA_PORT=8000#CHROMA_PORT=8001#' "$VDB_ENV"
-  ( cd "$ORG_DIR/vector-db" && docker build -q -t ganjj-vector-db . ) >/tmp/gc-vector-db-build.log 2>&1
-  docker rm -f ganjj-vector-db >/dev/null 2>&1
-  ( cd "$ORG_DIR/vector-db" && docker run -d --env-file "$VDB_ENV" -p 8002:8002 --name ganjj-vector-db ganjj-vector-db ) >/tmp/gc-vector-db-run.log 2>&1
-  wait_ok "http://localhost:8002/health" 60 && echo "- vector-db: PASS" || echo "- vector-db: FAIL (ver /tmp/gc-vector-db-run.log)"
+  [ -f "$ORG_DIR/vector-db/.env" ] || cp "$ORG_DIR/vector-db/.env.example" "$ORG_DIR/vector-db/.env"
+  ( cd "$ORG_DIR/vector-db" && docker compose up -d --build ) >/tmp/gc-vector-db.log 2>&1
+  wait_ok "http://localhost:8002/health" 60 && echo "- vector-db: PASS" || echo "- vector-db: FAIL (ver /tmp/gc-vector-db.log)"
 
-  ER_ENV="/tmp/ganjj-embedding-reranking.env"
-  cp "$ORG_DIR/embedding-reranking/.env.example" "$ER_ENV"
-  sed -i '' 's#VECTOR_DB_BASE_URL=http://vector-db:8002#VECTOR_DB_BASE_URL=http://host.docker.internal:8002#' "$ER_ENV"
-  ( cd "$ORG_DIR/embedding-reranking" && docker build -q -t ganjj-embedding-reranking . ) >/tmp/gc-embedding-build.log 2>&1
-  docker rm -f ganjj-embedding-reranking >/dev/null 2>&1
-  ( cd "$ORG_DIR/embedding-reranking" && docker run -d --env-file "$ER_ENV" -p 8003:8003 --name ganjj-embedding-reranking ganjj-embedding-reranking ) >/tmp/gc-embedding-run.log 2>&1
-  wait_ok "http://localhost:8003/health" 60 && echo "- embedding-reranking: PASS" || echo "- embedding-reranking: FAIL (ver /tmp/gc-embedding-run.log)"
+  [ -f "$ORG_DIR/embedding-reranking/.env" ] || cp "$ORG_DIR/embedding-reranking/.env.example" "$ORG_DIR/embedding-reranking/.env"
+  ( cd "$ORG_DIR/embedding-reranking" && docker compose up -d --build ) >/tmp/gc-embedding.log 2>&1
+  wait_ok "http://localhost:8003/health" 60 && echo "- embedding-reranking: PASS" || echo "- embedding-reranking: FAIL (ver /tmp/gc-embedding.log)"
 
   [ -f "$ORG_DIR/llm-provider/.env" ] || cp "$ORG_DIR/llm-provider/.env.example" "$ORG_DIR/llm-provider/.env"
-  ( cd "$ORG_DIR/llm-provider" && docker build -q -t ganjj-llm-provider . ) >/tmp/gc-llm-build.log 2>&1
-  docker rm -f ganjj-llm-provider >/dev/null 2>&1
-  ( cd "$ORG_DIR/llm-provider" && docker run -d --env-file "$ORG_DIR/llm-provider/.env" -p 8004:8004 --name ganjj-llm-provider ganjj-llm-provider ) >/tmp/gc-llm-run.log 2>&1
-  wait_ok "http://localhost:8004/health" 60 && echo "- llm-provider: PASS" || echo "- llm-provider: FAIL (ver /tmp/gc-llm-run.log)"
+  ( cd "$ORG_DIR/llm-provider" && docker compose up -d --build ) >/tmp/gc-llm.log 2>&1
+  wait_ok "http://localhost:8004/health" 60 && echo "- llm-provider: PASS" || echo "- llm-provider: FAIL (ver /tmp/gc-llm.log)"
   echo ""
 }
 
