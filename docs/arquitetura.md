@@ -71,8 +71,8 @@ algum** — a troca de banco aproxima o projeto do material, não o contrário. 
 requisitos coletivos com folga: cinco linguagens distintas (Java, Python, Node, C#, PHP) e quatro bancos
 distintos (PostgreSQL, MongoDB, Redis, MySQL), mesmo com o serviço de Pedido também em MySQL.
 
-**Risco registrado:** PHP/Laravel não aparece na lista de linguagens dos slides. A lista não se apresenta como
-fechada, mas confirmar com o professor é uma pendência aberta.
+**Risco resolvido (18/10/2026):** PHP/Laravel não aparece na lista de linguagens dos slides, mas o professor
+confirmou que a stack é livre.
 
 ### Escopo: três recursos
 
