@@ -261,7 +261,7 @@ fica o mapa.
 | `client` | Eduardo | sem CI; sem `/metrics` |
 | `product` | João Correa | sem `/metrics`; confirmar porta 8000 (INT-009) |
 | `llm-provider`, `embedding-reranking`, `vector-db` | João Correa | Ingress público apesar de só o `product` chamá-los; sem `/metrics` |
-| API Gateway | Lucas | não existe; repo novo na organização, escopo a definir |
-| Serviço de suporte (e-mail/SMS/WhatsApp) | Lucas | não existe; repo novo na organização, escopo a definir |
+| API Gateway | Lucas | repo [`api-gateway`](https://github.com/Back-End-Cloud-Computing/api-gateway) criado em 19/10/2026 com docs, issues e scaffold; falta implementar (fase 1 até 24/10) |
+| Serviço de suporte (e-mail/SMS/WhatsApp) | Eduardo | repo [`support`](https://github.com/Back-End-Cloud-Computing/support) criado em 19/10/2026 com docs, issues e scaffold provisório em Go; Eduardo confirma a stack; o `order` precisa chamá-lo (issue aberta no `order`) |
 
 Fora do código do `promotion`: nenhum serviço tem Helm ou Prometheus/Grafana. Padrão do grupo a combinar.
