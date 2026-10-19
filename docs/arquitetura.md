@@ -8,10 +8,11 @@ por integrante:
 
 | Integrante | Serviço | Stack |
 |---|---|---|
-| Eduardo Fabri | Cliente | Java / Spring Boot + PostgreSQL |
+| Eduardo Fabri | Autorização | Java 21 / Spring Boot + Oracle |
+| Eduardo Fabri | Cliente | Go + PostgreSQL |
 | João Correa | Produto | Python / FastAPI + MongoDB |
 | João Liz | Carrinho | Node.js / Express + Redis |
-| Rodrigo Alves | Pedido | C# / ASP.NET Core + MySQL |
+| Rodrigo Alves | Pedido | C# / ASP.NET Core + SQL Server |
 | **Lucas Stopinski** | **Promoção** | **PHP / Laravel + MySQL** |
 
 Este repositório é o serviço de **Promoção**. Não há frontend — a avaliação é sobre código, banco e as técnicas
@@ -75,8 +76,8 @@ MySQL.
 
 O material do professor lista MySQL explicitamente entre os bancos aceitos e **não menciona SQLite em momento
 algum** — a troca de banco aproxima o projeto do material, não o contrário. A equipe continua cumprindo os dois
-requisitos coletivos com folga: cinco linguagens distintas (Java, Python, Node, C#, PHP) e quatro bancos
-distintos (PostgreSQL, MongoDB, Redis, MySQL), mesmo com o serviço de Pedido também em MySQL.
+requisitos coletivos com folga: seis linguagens distintas (Java, Go, Python, Node, C#, PHP) e seis bancos
+distintos (Oracle, PostgreSQL, MongoDB, Redis, SQL Server, MySQL).
 
 **Risco resolvido (18/10/2026):** PHP/Laravel não aparece na lista de linguagens dos slides, mas o professor
 confirmou que a stack é livre.
@@ -256,14 +257,16 @@ dinheiro.
 
 ## Autenticação
 
-O JWT é emitido pelo serviço de Cliente (Eduardo). Este serviço **apenas verifica a assinatura** com o
-`JWT_SECRET` compartilhado — mesmo padrão do repo base, onde cada serviço tem sua cópia do `jwt.js` em vez de
-chamar o auth-service por HTTP a cada requisição.
+O JWT é emitido pelo serviço de Autorização (Eduardo), assinado com RS256. Este serviço **apenas verifica a
+assinatura** com a chave pública do Autorização (`JWT_PUBLIC_KEY`, exposta em `GET /auth/public-key`), sem
+chamar o serviço por HTTP a cada requisição. O algoritmo é fixado em RS256, e o `iss` (`ganjj-authorization`) e
+o `typ` (`access`) do token são conferidos. A troca do segredo simétrico (HS256) pela chave pública está em
+[alinhamento-jwt-rs256.md](alinhamento-jwt-rs256.md).
 
 Biblioteca: `firebase/php-jwt`. **Não** Sanctum nem Passport — eles resolvem emissão de token e gestão de
 sessão, que são problema de outro serviço. Aqui só é preciso verificar um token de terceiro.
 
-Payload esperado: `{id, email, isAdmin}`, aceito via header `Authorization: Bearer` ou cookie `accessToken`.
+Claims usadas: `sub` (id da conta), `email` e `role` (`ADMIN` vira `isAdmin`), aceito via header `Authorization: Bearer` ou cookie `accessToken`.
 
 ## Convenções herdadas do repo base
 
