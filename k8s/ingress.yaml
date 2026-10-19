@@ -1,3 +1,11 @@
+# Entrada HTTP externa. Roteamento por HOST, como nos outros serviços do cluster.
+#
+# Lista de permissão em vez de bloqueio: só /api e /docs (OpenAPI) chegam de fora.
+# /internal (chamadas entre serviços, protegidas por x-internal-secret), /metrics
+# (dado operacional) e /health* ficam sem rota, então o NGINX devolve 404. Bloquear
+# por exceção exigiria configuration-snippet, que o ingress-nginx recente desativa
+# por padrão; a lista de permissão não depende disso e falha fechada se uma rota
+# nova for criada.
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
@@ -5,9 +13,17 @@ metadata:
 spec:
   ingressClassName: nginx
   rules:
-    - http:
+    - host: promotion.ganjj.local
+      http:
         paths:
-          - path: /
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: promotion
+                port:
+                  number: 8000
+          - path: /docs
             pathType: Prefix
             backend:
               service:

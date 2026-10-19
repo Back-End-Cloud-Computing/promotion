@@ -6,6 +6,8 @@ data:
   APP_NAME: "Promotion"
   APP_ENV: "production"
   APP_DEBUG: "false"
+  # Libera /docs/api (OpenAPI) pra demonstração. Desligar fora da demo.
+  API_DOCS_PUBLIC: "true"
   APP_URL: "http://promotion:8000"
   APP_TIMEZONE: "UTC"
   LOG_CHANNEL: "stderr"

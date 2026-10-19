@@ -2,17 +2,23 @@
 
 Ver [docs/fases/fase-3-kubernetes.md](../docs/fases/fase-3-kubernetes.md) para o porquê de cada decisão.
 
-## 1. Build da imagem dentro do minikube
+## 1. Imagem
 
-O cluster não enxerga o Docker do host por padrão:
+O Deployment usa a imagem publicada `bascratki/promotion:1.0.0` (Docker Hub), como os outros serviços do grupo.
+Para publicar uma versão nova (precisa de `docker login` com a conta `bascratki`):
+
+```bash
+docker build -t bascratki/promotion:1.0.0 .
+docker push bascratki/promotion:1.0.0
+```
+
+Para testar código local sem publicar, builde dentro do minikube com a mesma tag — o `IfNotPresent` usa a imagem
+já carregada em vez de baixar:
 
 ```bash
 eval $(minikube docker-env)
-docker build -t promotion:local .
+docker build -t bascratki/promotion:1.0.0 .
 ```
-
-Repetir sempre que o código mudar — o Deployment usa `imagePullPolicy: IfNotPresent`, então uma imagem já
-carregada não é rebuildada sozinha.
 
 ## 2. Criar o Secret
 
@@ -22,7 +28,7 @@ encontrar em `promotion-secrets`: `APP_KEY`, `DB_PASSWORD`, `INTERNAL_SECRET`.
 
 ```bash
 kubectl create secret generic promotion-secrets \
-  --from-literal=APP_KEY="$(docker run --rm promotion:local php artisan key:generate --show)" \
+  --from-literal=APP_KEY="$(docker run --rm --entrypoint php bascratki/promotion:1.0.0 artisan key:generate --show)" \
   --from-literal=DB_PASSWORD=promotion \
   --from-literal=INTERNAL_SECRET=troque-por-um-segredo-de-verdade
 ```
@@ -53,10 +59,14 @@ kubectl port-forward svc/promotion 8000:8000 &
 curl localhost:8000/health
 curl localhost:8000/health/ready
 
-# via Ingress, sem port-forward:
-curl http://$(minikube ip)/health
-# se o IP do minikube não for alcançável direto do host, use `minikube tunnel`
-# em outro terminal e troque pra `curl localhost/health`
+# via Ingress, por host (adicione `promotion.ganjj.local` ao /etc/hosts apontando pro IP do minikube,
+# ou use `minikube tunnel` e 127.0.0.1):
+curl http://promotion.ganjj.local/api/sale
+curl -i http://promotion.ganjj.local/internal/discounts/calculate   # 404: não existe rota pública
+curl -i http://promotion.ganjj.local/metrics                        # 404
+
+# métricas, só de dentro (port-forward ou Prometheus):
+curl localhost:8000/metrics
 ```
 
 ## 6. Provar autorrecuperação
