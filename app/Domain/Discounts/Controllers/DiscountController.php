@@ -6,6 +6,7 @@ use App\Domain\Coupons\Services\CouponService;
 use App\Domain\Discounts\Services\DiscountCalculator;
 use App\Domain\Promotions\Entities\Promotion;
 use App\Http\Controllers\Controller;
+use App\Support\Metrics;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
@@ -60,6 +61,14 @@ class DiscountController extends Controller
             ];
         }
 
+        Metrics::calculation();
+
+        if ($result['coupon'] !== null) {
+            $result['coupon']['applied']
+                ? Metrics::couponApplied()
+                : Metrics::couponRefused($result['coupon']['reason']);
+        }
+
         return response()->json($result);
     }
 
@@ -72,10 +81,14 @@ class DiscountController extends Controller
         $coupon = $this->coupons->find($code);
 
         if ($coupon === null) {
+            Metrics::couponRefused('Cupom não encontrado');
+
             return response()->error(404, 'Cupom não encontrado');
         }
 
         if (! $this->coupons->consume($coupon)) {
+            Metrics::couponRefused('Limite de uso atingido');
+
             return response()->error(409, 'Limite de uso atingido');
         }
 

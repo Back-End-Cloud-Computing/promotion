@@ -67,6 +67,9 @@ return [
 
     'timezone' => 'UTC',
 
+    // Libera /docs/api fora de APP_ENV=local (Gate viewApiDocs). Ligado só na demo.
+    'api_docs_public' => (bool) env('API_DOCS_PUBLIC', false),
+
     /*
     |--------------------------------------------------------------------------
     | Application Locale Configuration

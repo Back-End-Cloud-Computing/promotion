@@ -1,6 +1,8 @@
 # Fase 5 — Segurança e observabilidade
 
 **Quando:** JWT após 20/10, Helm após 27/10, observabilidade após 03/11.
+**Status (18/10/2026):** métricas, Ingress fechado e Gate de docs prontos; Helm e Grafana aguardam as aulas.
+
 **Vale:** peso na N2 (R2 — segurança, distribuição e observabilidade, 3,0 pontos) e sustenta a apresentação
 técnica (R3, 3,0).
 **Entrega:** JWT alinhado com o serviço real de Cliente, métricas expostas e o serviço pronto para a
@@ -51,16 +53,29 @@ banco e trecho de código. É a falha de configuração mais comum em Laravel ex
 
 ### 3. Métricas para Prometheus
 
-Só faz sentido se a equipe padronizar — métrica de um serviço só não vira dashboard.
+> **Status: ✅ implementado** em `app/Support/Metrics.php`, exposto em `GET /metrics` (`routes/internal.php`),
+> coberto por `tests/Feature/MetricsTest.php`. O Plano de Ensino cobra Prometheus e Grafana na N2 (aula de 03/11),
+> então deixou de ser opcional.
+>
+> **Decisão: sem `promphp/prometheus_client_php`.** São três contadores; o formato texto do Prometheus é trivial
+> e a lib exigiria APCu/Redis para compartilhar estado entre workers. Os contadores ficam no cache `file` (o
+> `CACHE_STORE=array` do cluster morre a cada request), **por pod** — o Prometheus raspa cada pod e soma; um
+> store compartilhado (MySQL) faria todos os pods devolverem o mesmo total e a soma sairia multiplicada. Se o
+> grupo padronizar uma lib, trocar `Metrics` por ela mantém os nomes.
+>
+> O scrape é por anotações do pod (`prometheus.io/scrape|port|path`) em `k8s/deployment.yaml`. O Ingress não expõe
+> `/metrics`.
 
-Se for adiante: `promphp/prometheus_client_php` expondo `/metrics`, com contadores que dizem algo do domínio,
-não só do HTTP:
+Contadores que dizem algo do domínio, não só do HTTP:
 
 | Métrica | Por quê |
 |---|---|
 | `promocao_calculos_total` | Volume de uso do endpoint principal |
 | `promocao_cupons_aplicados_total` | Cupom aplicado com sucesso |
 | `promocao_cupons_recusados_total{motivo}` | **A mais útil** — separada por motivo de recusa |
+
+O `motivo` é um conjunto fixo (`nao_encontrado`, `inativo`, `expirado`, `nao_vigente`, `limite_uso`, `valor_minimo`), não a
+mensagem livre — senão cada valor mínimo diferente criaria uma série nova.
 
 A terceira é a que responde perguntas de negócio na apresentação: quantos cupons são recusados por valor
 mínimo? Por expiração? É a diferença entre um gráfico bonito e um gráfico que ensina algo.
@@ -70,13 +85,13 @@ mínimo? Por expiração? É a diferença entre um gráfico bonito e um gráfico
 `LOG_CHANNEL=stderr` já vale desde a Fase 2. Aqui, garantir que o log em JSON inclua o suficiente para
 correlacionar uma requisição entre serviços — um `request_id` propagado por header, se a equipe adotar.
 
-### 5. Helm — opcional
+### 5. Helm — obrigatório (aula 10, 27/10, IA2.2)
 
-Se a equipe padronizar Helm no deploy, empacotar os manifests da Fase 3 num chart, com `values.yaml`
-parametrizando imagem, réplicas e recursos.
+O Plano de Ensino pede Helm para "parametrizar e automatizar a distribuição" na N2. Empacotar os manifests da
+Fase 3 num chart em `helm/promotion/`, com `values.yaml` parametrizando imagem, réplicas, recursos e host.
+Manter `k8s/` como alternativa. Fazer depois da aula, para seguir o padrão que o professor mostrar.
 
-**Só se a equipe adotar.** Um chart para um serviço enquanto os outros quatro usam `kubectl apply` adiciona
-uma ferramenta sem eliminar nenhuma.
+> Status: ⬜ pendente (aula em 27/10).
 
 ### 6. Preparar a apresentação
 

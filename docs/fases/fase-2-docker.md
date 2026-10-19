@@ -118,7 +118,8 @@ aula de Kubernetes, então entram aqui em vez de esperar a Fase 3.
   `/docs/api`. `api_path` default (`'api'`) já bate com o prefixo usado no projeto — `/internal/*` mora em
   `routes/internal.php`, fora do prefixo `api`, então nunca aparece na doc pública. Acesso restrito por
   `RestrictedDocsAccess`: livre só com `APP_ENV=local`, 403 fora disso a menos que a Gate `viewApiDocs` seja
-  definida — nenhuma config extra precisou ser escrita.
+  definida. No cluster ela foi definida em `AppServiceProvider` e é controlada pela flag `API_DOCS_PUBLIC` (default
+  `false`; ligada no ConfigMap para a demo da N2).
 - **Publicação da imagem no GHCR**, não Docker Hub. Job novo `publish` no `ci.yml`, roda só em push pra `main`
   (nunca em PR), usa o `GITHUB_TOKEN` da própria Action — zero secret novo pra criar ou vazar. Tags:
   `ghcr.io/back-end-cloud-computing/promotion:latest` e `:sha-<commit>`.
