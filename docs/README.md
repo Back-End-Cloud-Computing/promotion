@@ -45,7 +45,7 @@ Cada fase é entregável por si só e está ancorada numa data do cronograma da 
 Estas dependem de conversa, não de commit:
 
 - [x] ~~Confirmar com o professor se PHP/Laravel é aceito~~ — confirmado em 18/10/2026: stack livre.
-- [ ] Definir com a equipe quem constrói o **microsserviço de suporte** (e-mail/SMS/WhatsApp) e o **API Gateway** — são exigências do professor que nenhum dos 5 serviços de domínio cobre.
+- [x] ~~Definir quem constrói o **microsserviço de suporte** e o **API Gateway**~~ — definido em 19/10/2026: Gateway é do Lucas ([`api-gateway`](https://github.com/Back-End-Cloud-Computing/api-gateway)) e suporte é do Eduardo ([`support`](https://github.com/Back-End-Cloud-Computing/support)). Repos novos, com docs, issues e scaffold próprios.
 - [ ] Avisar o Rodrigo (Pedido) que ambos usarão MySQL. Não quebra o requisito de "≥2 bancos distintos", mas o grupo deve saber.
 - [ ] Combinar com o Rodrigo o nome da exchange/fila e o payload do evento de pedido confirmado (pré-requisito da Fase 4).
 - [ ] Pedir ao Eduardo (Autorização) a chave pública real de deploy pra colar em `JWT_PUBLIC_KEY` e testar ponta a ponta — o contrato já está fechado ([ADR 0002](adr/0002-jwt-rs256-chave-estatica.md)), falta só essa validação com token real.
