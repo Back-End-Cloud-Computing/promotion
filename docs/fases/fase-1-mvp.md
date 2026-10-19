@@ -107,7 +107,7 @@ precisar digitar JSON na frente da turma. `/internal/*` fica fora do Swagger por
 — continua sendo demonstrado por `curl`, como na tabela abaixo.
 
 > Swagger só abre livre em `APP_ENV=local` (`RestrictedDocsAccess`, do próprio Scramble). Demonstrar fora do
-> local (ex: no cluster K8s, `APP_ENV=production`) exige definir a Gate `viewApiDocs` antes.
+> local (ex: no cluster K8s, `APP_ENV=production`) exige a Gate `viewApiDocs` — já definida, ligada pela env `API_DOCS_PUBLIC=true` (ConfigMap do cluster).
 
 ## Verificação
 

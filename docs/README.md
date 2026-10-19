@@ -22,7 +22,8 @@ Cada fase é entregável por si só e está ancorada numa data do cronograma da 
 | 2 | [Docker](fases/fase-2-docker.md) | após 18/08 | Imagem, compose, health checks |
 | 3 | [Kubernetes](fases/fase-3-kubernetes.md) | após 25/08 | Manifests, probes, secrets |
 | 4 | [Integração e mensageria](fases/fase-4-integracao.md) | após 15/09 | REST interno + RabbitMQ |
-| 5 | [Segurança e observabilidade](fases/fase-5-seguranca.md) | após 20/10 | JWT alinhado, métricas — pesa na N2 |
+| 5 | [Segurança e observabilidade](fases/fase-5-seguranca.md) | após 20/10 | JWT alinhado, métricas, Helm — **obrigatórios** pelo Plano de Ensino (R2 da N2) |
+| N2 | [Roteiro da apresentação](apresentacao-n2.md) | 10/11/2026 | O que mostrar, em que ordem, e o que responder |
 
 ## Datas que não se movem
 
@@ -37,17 +38,17 @@ Cada fase é entregável por si só e está ancorada numa data do cronograma da 
 | 20/10 | Aula de Segurança com JWT |
 | 27/10 | Aula de Helm |
 | 03/11 | Aula de Observabilidade |
-| **10/11** | **N2 — apresentação em equipe, 40% da nota** |
+| **10/11/2026 (terça)** | **N2 — apresentação em equipe, 40% da nota** (confirmado no Plano de Ensino oficial, aula 12; o Canvas não tem tarefa nem data da N2) |
 
 ## Pendências fora do código
 
 Estas dependem de conversa, não de commit:
 
-- [ ] Confirmar com o professor se **PHP/Laravel** é aceito — os slides citam Java, Python e Node com framework, e Kotlin, C# e Go como alternativas. A lista não se apresenta como fechada, mas confirmar custa uma pergunta.
+- [x] ~~Confirmar com o professor se PHP/Laravel é aceito~~ — confirmado em 18/10/2026: stack livre.
 - [ ] Definir com a equipe quem constrói o **microsserviço de suporte** (e-mail/SMS/WhatsApp) e o **API Gateway** — são exigências do professor que nenhum dos 5 serviços de domínio cobre.
 - [ ] Avisar o Rodrigo (Pedido) que ambos usarão MySQL. Não quebra o requisito de "≥2 bancos distintos", mas o grupo deve saber.
 - [ ] Combinar com o Rodrigo o nome da exchange/fila e o payload do evento de pedido confirmado (pré-requisito da Fase 4).
 - [ ] Pedir ao Eduardo (Autorização) a chave pública real de deploy pra colar em `JWT_PUBLIC_KEY` e testar ponta a ponta — o contrato já está fechado ([ADR 0002](adr/0002-jwt-rs256-chave-estatica.md)), falta só essa validação com token real.
 - [ ] Entender o formato exato da N1 agora que é um lab do professor, não o repo individual — o que isso muda pra pontuação das fases 2/3/4 (se muda algo).
-- [ ] Definir a Gate `viewApiDocs` (Scramble) se a demonstração da API for feita fora de `APP_ENV=local` — sem
+- [x] ~~Definir a Gate `viewApiDocs` (Scramble)~~ — feito: flag `API_DOCS_PUBLIC` (ConfigMap, ligada na demo). Contexto original: (Scramble) se a demonstração da API for feita fora de `APP_ENV=local` — sem
   isso, `/docs/api` devolve 403 no cluster K8s (`APP_ENV=production`). Decisão: testes manuais via OpenAPI, sem coleção Postman (ver [Fase 1](fases/fase-1-mvp.md#7-testes-manuais-via-openapi)).

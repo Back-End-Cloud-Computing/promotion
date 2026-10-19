@@ -1,0 +1,43 @@
+# Roteiro da apresentação N2 — 10/11/2026
+
+Rubrica (Plano de Ensino): R1 arquitetura distribuída em Kubernetes (4,0) · R2 segurança, distribuição e
+observabilidade (3,0) · R3 apresentação técnica, decisões e tecnologias (3,0). Apresentação em equipe, para a
+sala toda. Este roteiro cobre a parte do `promotion`; a ordem final depende do grupo.
+
+## Demonstração
+
+| # | O quê | Como mostrar | Rubrica |
+|---|---|---|---|
+| 1 | Serviço rodando no cluster | `kubectl get pods` (2 réplicas `1/1`, MySQL, init container de migration) | R1 |
+| 2 | Autorrecuperação | `kubectl delete pod <um>` e `get pods -w` | R1 |
+| 3 | Entrada pelo Ingress | `curl -H "Host: promotion.ganjj.local" .../api/sale` (200) | R1 |
+| 4 | `/internal` e `/metrics` não vazam | mesma chamada em `/internal/...` e `/metrics`: 404 | R2 |
+| 5 | JWT RS256 | token real do `authorization`; admin 200, sem token 401 (ver PROMO-002) | R2 |
+| 6 | Cálculo de desconto | `POST /internal/discounts/calculate` com `x-internal-secret` | R1 |
+| 7 | Observabilidade | `/metrics` por `port-forward`; painel no Grafana com os 3 contadores | R2 |
+| 8 | Distribuição | `helm install` (após a aula de 27/10) | R2 |
+
+## Decisões para defender (R3)
+
+- Serviço autocontido: roda e é avaliável sem depender de nenhum colega.
+- Três tabelas em vez de modelo unificado (ver `arquitetura.md`).
+- Dinheiro em centavos inteiros; percentual é a única operação em ponto flutuante.
+- Migration em initContainer, não no entrypoint, para não rodar em paralelo com 2 réplicas.
+- Liveness sem banco, readiness com banco: lentidão do MySQL não derruba todos os pods.
+- Ingress por lista de permissão (`/api`, `/docs`); `/internal` protegido por rede e por segredo.
+- Métricas de domínio (`motivo` de recusa) em vez de só métricas HTTP; contadores por pod.
+- RS256 com chave pública em ConfigMap: não é segredo. Segredos só em Secret.
+
+## Perguntas prováveis
+
+- Por que PHP/Laravel? Stack livre confirmada pelo professor; o foco é a arquitetura.
+- Por que não promphp? Três contadores não justificam a dependência; ver `fases/fase-5-seguranca.md`.
+- Os contadores zeram se o pod reinicia? Sim; o Prometheus trata reset de counter (`rate()`/`increase()`).
+- Quem chama o `promotion`? Pelo ADR do Order, o Cart compõe a cotação (INT-002); hoje ninguém chama.
+
+## Antes do dia
+
+- [ ] Imagem publicada (`bascratki/promotion`) e testada com `ImagePullPolicy` real.
+- [ ] PROMO-002 executado com token real.
+- [ ] Dashboard do Grafana exportado em JSON.
+- [ ] Ensaio com o grupo; tempo por pessoa.

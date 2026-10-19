@@ -219,6 +219,12 @@ um uso e um cupom de 500 usos se esgotaria sem nenhuma venda.
 O incremento é atômico (`UPDATE ... WHERE usage_count < usage_limit`), então duas compras simultâneas no
 último uso disponível não passam as duas.
 
+### `GET /metrics`
+
+Formato texto do Prometheus: `promocao_calculos_total`, `promocao_cupons_aplicados_total` e
+`promocao_cupons_recusados_total{motivo}`. Sem autenticação e **sem rota no Ingress** — só o Prometheus, de dentro
+do cluster, deve alcançá-lo. Não é parte do contrato de negócio.
+
 ### `GET /health` e `GET /health/ready`
 
 Sem autenticação — são os alvos das probes do Kubernetes.
