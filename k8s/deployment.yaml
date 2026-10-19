@@ -13,13 +13,18 @@ spec:
     metadata:
       labels:
         app: promotion
+      annotations:
+        # Convenção do Prometheus: o scrape vai direto no pod, sem passar pelo Ingress.
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8000"
+        prometheus.io/path: "/metrics"
     spec:
       # Migration isolada num initContainer: com 2+ réplicas subindo juntas, rodar
       # `migrate` no entrypoint de cada uma dispararia a mesma migration em paralelo.
       # O retry cobre a corrida normal de startup contra o Deployment do MySQL.
       initContainers:
         - name: migrate
-          image: promotion:local
+          image: bascratki/promotion:1.0.0
           imagePullPolicy: IfNotPresent
           command:
             - sh
@@ -32,7 +37,7 @@ spec:
                 name: promotion-secrets
       containers:
         - name: promotion
-          image: promotion:local
+          image: bascratki/promotion:1.0.0
           imagePullPolicy: IfNotPresent
           # Sobrescreve o ENTRYPOINT da imagem (que roda migrate) — a migration já
           # rodou no initContainer acima.
