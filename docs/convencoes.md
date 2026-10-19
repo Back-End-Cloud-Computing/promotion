@@ -65,6 +65,13 @@ leitor evita. Commit de uma linha basta quando a mudança é óbvia — e a maio
 O hook `commit-msg` do lefthook recusa mensagem fora do padrão. Para pular
 pontualmente: `LEFTHOOK=0 git commit`.
 
+### Autoria
+
+Todo commit e todo PR saem **só com Lucas como autor**: conta `LucasStop` no `gh` (confira com
+`gh auth status`) e `user.email` de Lucas no git. Sem linha `Co-Authored-By`, sem assistente de IA como
+coautor e sem texto de atribuição no corpo do PR. O gráfico de Contributors do GitHub conta autor e
+coautor, então um e-mail de outra conta ou um trailer de coautoria vira um "contribuidor" que não existe.
+
 ## Branches
 
 `feat/nome-descritivo` ou `fix/nome-descritivo`, em inglês, kebab-case.
