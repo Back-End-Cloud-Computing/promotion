@@ -106,11 +106,15 @@ minikube addons enable ingress
 kubectl get pods -n ingress-nginx   # aguardar Running
 kubectl apply -k k8s/
 kubectl get ingress
-curl http://$(minikube ip)/health   # ou `minikube tunnel` + curl localhost, se o IP não for alcançável direto
 ```
 
-Ingress compartilhado entre serviços da equipe (host/path por serviço) fica fora deste manifest — aqui é só
-a exposição do `promotion` sozinho, suficiente para fechar o padrão que o lab ensina.
+O Ingress roteia por **host** (`promotion.ganjj.local`, igual aos outros serviços) e usa **lista de permissão**:
+só `/api` e `/docs` têm rota. `/internal/*`, `/metrics` e `/health*` devolvem 404 de fora do cluster (fecha
+PROMO-003). Escolhi allowlist em vez de bloquear por exceção porque `configuration-snippet` vem desativado no
+ingress-nginx recente e porque falha fechada quando uma rota nova é criada. Verificado no minikube, de dentro do
+controller com `Host: promotion.ganjj.local`: `/api/sale` 200, `/docs/api` 200, `/internal/...` 404, `/metrics` 404.
+
+A imagem é `bascratki/promotion:1.0.0` (Docker Hub, como os outros serviços do grupo).
 
 ## Verificação
 
@@ -139,7 +143,7 @@ tráfego.
 
 ## Riscos
 
-**Imagem local no minikube.** O cluster não enxerga a imagem do Docker local por padrão. Resolver com
+**Imagem no minikube.** Sem `docker push`, o cluster só enxerga a imagem se ela estiver no Docker do minikube. O cluster não enxerga a imagem do Docker local por padrão. Resolver com
 `eval $(minikube docker-env)` antes do build, ou `minikube image load`. É o erro mais comum da primeira
 tentativa e se manifesta como `ImagePullBackOff`.
 

@@ -1,5 +1,6 @@
 <?php
 
+use App\Support\Metrics;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 
@@ -40,3 +41,15 @@ Route::get('health/ready', function () {
 
     return response()->json(['status' => 'ready']);
 });
+
+/*
+|--------------------------------------------------------------------------
+| Métricas
+|--------------------------------------------------------------------------
+|
+| Raspadas pelo Prometheus direto no pod (anotações do Deployment). O Ingress
+| bloqueia /metrics como bloqueia /internal: é dado operacional, não API pública.
+*/
+Route::get('metrics', fn () => response(Metrics::render(), 200, [
+    'Content-Type' => 'text/plain; version=0.0.4; charset=utf-8',
+]));

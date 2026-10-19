@@ -1,7 +1,7 @@
 # Pendências de integração entre os microsserviços GANJJ
 
 Status: Em acompanhamento
-Última atualização: 2026-09-16
+Última atualização: 2026-10-18
 Idioma: Português (PT-BR)
 
 ## 1. Objetivo
@@ -24,6 +24,9 @@ coisa. IDs `PROMO-*` são específicos deste serviço.
 | PROMO-001 | Consumo de `pedido.confirmado` via RabbitMQ | Order e Promotion | Pendente | Não |
 | INT-009 | Porta errada do Product nos consumidores | Order, Cart, Product | Confirmado (código) | Sim — Order↔Product e Cart↔Product não conectam sem sobrescrever a env var |
 | INT-010 | `shopping-cart` sem `.env.example` no repo | Cart | Confirmado (repo) | Não bloqueia outros serviços, mas quebra o setup de quem clona `shopping-cart` do zero |
+| PROMO-003 | Ingress expunha `/internal` | Promotion | Resolvido (18/10) — allowlist `/api` + `/docs` | Não |
+| PROMO-004 | Observabilidade (`/metrics`, Prometheus, Grafana) | Todos | Promotion pronto; demais pendentes | Sim, para R2 da N2 |
+| PROMO-005 | Helm (aula 27/10) | Todos | Pendente | Sim, para R2 da N2 |
 | PROMO-002 | Validar JWT RS256 ponta a ponta | Authorization, Order, Cart, Promotion | Pendente (teste) | Não — mas fecha de vez o risco de INT-001 |
 
 ## 3. Prontidão N1/N2 por serviço
@@ -41,12 +44,13 @@ N1.
 | authorization | ✅ | ✅ | é o emissor | — |
 | client | ✅ | ✅ | ✅ valida | — |
 | order | ✅ (16/09) | ⚠️ | ✅ valida | tem `compose.yaml`, não `docker-compose.yml`; K8s só local (Minikube, [ADR 0007](../../order/docs/adr/0007-local-kubernetes-deployment.md)) — Deployment 3 réplicas + StatefulSet SQL Server, sem Ingress, exposto via `kubectl port-forward` |
-| product | ❌ | ❌ | ❌ sem auth | inclui `llm-provider`, `embedding-reranking` e `vector-db` — nenhum dos três é chamado fora de `product` (coupling rule, `product/README.md`: "this service knows embedding-reranking... and llm-provider... plus a single direct call to vector-db..."), então não entram como linhas próprias; se `product` não tem K8s/JWT, o guarda-chuva inteiro não tem |
+| product | ✅ (28/09) | ✅ | ✅ valida | inclui `llm-provider`, `embedding-reranking` e `vector-db` — nenhum dos três é chamado fora de `product` (coupling rule, `product/README.md`), então não entram como linhas próprias; os 4 pegaram K8s + Ingress + JWT RS256 (HTTPBearer contra a chave pública do `authorization`) juntos em 28/09, `product` publica `:8000` (confirmado, bate com INT-009) |
 | promotion | ✅ | ✅ | ✅ | falta só o teste ponta a ponta — ver PROMO-002 |
 | shopping-cart | ✅ (08/09) | ✅ | ✅ valida | — |
 
-Observabilidade (Prometheus/métricas): nenhum repo implementou. Não é atraso — a fase 5 do
-cronograma só começa após 20/10.
+Observabilidade (Prometheus/métricas): só o `promotion` expõe `/metrics` (18/10). Os outros 8 repos não têm.
+O Plano de Ensino (aula 11, 03/11) cobra Prometheus e Grafana na N2, e Helm (aula 10, 27/10): ambos entram no
+R2 (3,0). Também sem Helm em nenhum repo.
 
 ## 4. Pendências detalhadas
 
@@ -200,6 +204,10 @@ documenta os 7 valores necessários) e comita.
 
 ### PROMO-003 — Ingress do promotion expõe /internal fora do cluster
 
+**Resolvido em 2026-10-18.** `k8s/ingress.yaml` virou lista de permissão (`/api` e `/docs`) com host
+`promotion.ganjj.local`; `/internal/*`, `/metrics` e `/health*` devolvem 404. Verificado no minikube. O texto
+abaixo é o diagnóstico original.
+
 **Situação atual, confirmada lendo o repo:** `k8s/ingress.yaml` só tem uma regra `path: /` com
 `pathType: Prefix` apontando pro serviço inteiro — não há exclusão de `/internal/*`. O checklist
 de `docs/fases/fase-5-seguranca.md` ("`/internal` não alcançável de fora do cluster") segue em
@@ -226,7 +234,7 @@ serviço.
 - [x] Avisar Rodrigo e João Liz sobre o contrato de JWT quebrado em `order` e `shopping-cart`
       (INT-001) — os dois já migraram pra RS256, falta só validar ponta a ponta.
 - [ ] Rodar o teste ponta a ponta do JWT RS256 com token real do authorization (PROMO-002).
-- [ ] Corrigir o Ingress do promotion pra excluir /internal do acesso externo (PROMO-003).
+- [x] Corrigir o Ingress do promotion pra excluir /internal do acesso externo (PROMO-003) — 18/10.
 - [ ] Confirmar quem chama `/internal/discounts/calculate` e `/internal/coupons/{code}/consume`
       (INT-002).
 - [ ] Confirmar que `INTERNAL_SECRET` é idêntico em `order`, `shopping-cart` e `promotion`
@@ -238,3 +246,22 @@ serviço.
 - [ ] Confirmar com João Correa se `product` mantém a porta `8000` sozinho ou passa a depender
       de um compose raiz da organização, já que o `docker-compose.yml` do repo sumiu (INT-009).
 - [ ] Avisar João Liz que o `.env.example` do `shopping-cart` sumiu do repo (INT-010).
+
+## 6. Revisão cruzada para a N2 (2026-10-18)
+
+Levantamento feito lendo os 9 repos contra a rubrica do Plano de Ensino (N2 em 10/11/2026: R1 K8s 4,0, R2
+segurança/distribuição/observabilidade 3,0, R3 apresentação 3,0). Cada linha vira uma issue no repo do dono; aqui
+fica o mapa.
+
+| Repo | Dono | Gaps |
+| --- | --- | --- |
+| `order` | Rodrigo | sem Ingress (acesso por `port-forward`); imagem `ganjj-order:local` não publicada; sem `/metrics`; contrato `pedido.confirmado` (PROMO-001); porta do Product (INT-009) |
+| `shopping-cart` | João Liz | sem CI; `.env.example` ausente (INT-010); sem `/metrics`; porta do Product (INT-009); cotação com Promotion (INT-002) |
+| `authorization` | Eduardo | sem CI; sem `/metrics`; confirmar `GET /auth/public-key` para o teste do PROMO-002 |
+| `client` | Eduardo | sem CI; sem `/metrics` |
+| `product` | João Correa | sem `/metrics`; confirmar porta 8000 (INT-009) |
+| `llm-provider`, `embedding-reranking`, `vector-db` | João Correa | Ingress público apesar de só o `product` chamá-los; sem `/metrics` |
+| API Gateway | Lucas | não existe; repo novo na organização, escopo a definir |
+| Serviço de suporte (e-mail/SMS/WhatsApp) | Lucas | não existe; repo novo na organização, escopo a definir |
+
+Fora do código do `promotion`: nenhum serviço tem Helm ou Prometheus/Grafana. Padrão do grupo a combinar.
