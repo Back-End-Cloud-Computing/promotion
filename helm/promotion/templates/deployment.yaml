@@ -1,0 +1,63 @@
+{{- $image := printf "%s:%s" .Values.image.repository (default .Chart.AppVersion .Values.image.tag) }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: promotion
+  labels:
+    app: promotion
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: promotion
+  template:
+    metadata:
+      labels:
+        app: promotion
+      annotations:
+        # O ConfigMap muda => novo hash => os pods reiniciam com a config nova.
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8000"
+        prometheus.io/path: "/metrics"
+    spec:
+      # Migration isolada num initContainer: com 2+ réplicas, rodar no entrypoint
+      # de cada uma dispararia a mesma migration em paralelo.
+      initContainers:
+        - name: migrate
+          image: {{ $image }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command:
+            - sh
+            - -c
+            - until php artisan migrate --force; do echo 'banco ainda não respondeu, tentando de novo...'; sleep 3; done
+          envFrom:
+            - configMapRef:
+                name: promotion-config
+            - secretRef:
+                name: {{ .Values.existingSecret }}
+      containers:
+        - name: promotion
+          image: {{ $image }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          # Sobrescreve o ENTRYPOINT da imagem (que roda migrate): já rodou no initContainer.
+          command: [php, artisan, serve, --host=0.0.0.0, --port=8000]
+          ports:
+            - containerPort: 8000
+          envFrom:
+            - configMapRef:
+                name: promotion-config
+            - secretRef:
+                name: {{ .Values.existingSecret }}
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /health/ready
+              port: 8000
+            initialDelaySeconds: 5
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}

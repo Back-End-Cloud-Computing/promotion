@@ -1,0 +1,23 @@
+{{- if .Values.ingress.enabled }}
+# Lista de permissão: só /api e /docs chegam de fora. /internal, /metrics e
+# /health* ficam sem rota (404). Mesmo desenho do k8s/ingress.yaml.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: promotion-ingress
+spec:
+  ingressClassName: {{ .Values.ingress.className }}
+  rules:
+    - host: {{ .Values.ingress.host }}
+      http:
+        paths:
+          {{- range list "/api" "/docs" }}
+          - path: {{ . }}
+            pathType: Prefix
+            backend:
+              service:
+                name: promotion
+                port:
+                  number: 8000
+          {{- end }}
+{{- end }}

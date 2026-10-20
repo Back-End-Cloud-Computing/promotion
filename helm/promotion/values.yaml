@@ -1,0 +1,63 @@
+image:
+  repository: bascratki/promotion
+  tag: ""            # vazio usa o appVersion do Chart.yaml
+  pullPolicy: IfNotPresent
+
+replicaCount: 2
+
+# Secret criado fora do chart (kubectl create secret, ver k8s/README.md).
+# Chaves esperadas: APP_KEY, DB_PASSWORD, INTERNAL_SECRET.
+existingSecret: promotion-secrets
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 500m
+    memory: 256Mi
+
+ingress:
+  enabled: true
+  className: nginx
+  host: promotion.ganjj.local
+
+# Variáveis não sensíveis, iguais às do k8s/configmap.yaml.
+config:
+  APP_NAME: Promotion
+  APP_ENV: production
+  APP_DEBUG: "false"
+  # Libera /docs/api (OpenAPI) para a demonstração. Desligar fora da demo.
+  API_DOCS_PUBLIC: "true"
+  APP_URL: http://promotion:8000
+  APP_TIMEZONE: UTC
+  LOG_CHANNEL: stderr
+  DB_CONNECTION: mysql
+  DB_HOST: promotion-db
+  DB_PORT: "3306"
+  DB_DATABASE: promotion
+  DB_USERNAME: promotion
+  SESSION_DRIVER: array
+  CACHE_STORE: array
+  QUEUE_CONNECTION: sync
+  BROADCAST_CONNECTION: log
+  FILESYSTEM_DISK: local
+
+# Chave pública RS256 do serviço de Autorização. Não é segredo.
+jwtPublicKey: |
+  -----BEGIN PUBLIC KEY-----
+  MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAjylqAINH48DnpWSIeyTz
+  FLP25ychY4aqUGMJYrLKP3UJev2m2ZAKKH4nIv41XLY9NeRID3FYjePfB57xgr7i
+  WurhF+apx7hTsMG1+FckaIS27rhOnfs0JZDsiTEUNSKEGtfuQm3HEYHM6gZzn7HR
+  zJ99+8uIy3aIhQu0aBQ/WrXbOBtijK/H4tSbwmkhE2Pfw487Kzha1d1GOFozfZ2o
+  J9d8Rh+bq6CglfNlm3jM6kR8OKHD/guNgoLCK54Zi3CxYBdO9AJOWN9/lGSW3Z4U
+  80HdM6MjjyHK/eyVvBNoUEgLPJq64hDOIIpgFrv6TzvOM/c0b96Vb4s3jXDYwC6f
+  mQIDAQAB
+  -----END PUBLIC KEY-----
+
+# Em produção real o banco seria gerenciado: com enabled=false o chart só
+# sobe a aplicação e config.DB_HOST aponta para o banco externo.
+mysql:
+  enabled: true
+  image: mysql:8.0
+  storage: 1Gi
