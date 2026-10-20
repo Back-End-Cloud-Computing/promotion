@@ -1,0 +1,9 @@
+Antes do install, crie o Secret (chaves APP_KEY, DB_PASSWORD, INTERNAL_SECRET):
+  veja k8s/README.md, passo 2.
+
+Teste:
+  kubectl port-forward svc/promotion 8000:8000
+  curl localhost:8000/health/ready
+{{- if .Values.ingress.enabled }}
+  curl http://{{ .Values.ingress.host }}/api/sale
+{{- end }}
