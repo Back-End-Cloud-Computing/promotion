@@ -126,10 +126,11 @@ serviço e o porquê de cada uma estão em [arquitetura.md](../arquitetura.md) �
 - [x] JWT validado contra o contrato real do serviço de Autorização (RS256, `sub`/`role`, `iss`/`typ`) —
   falta só o teste ponta a ponta com token emitido de verdade
 - [x] Token adulterado, expirado e sem admin recusados corretamente
-- [ ] `/internal` não alcançável de fora do cluster
-- [ ] `APP_DEBUG=false` fora do local
-- [ ] Métricas expostas (se a equipe adotar Prometheus)
-- [ ] Decisões arquiteturais prontas para defesa oral
+- [x] `/internal` não alcançável de fora do cluster — o Ingress é lista de permissão (`/api` e `/docs`);
+  o `curl` com 404 no cluster fica para o ensaio
+- [x] `APP_DEBUG=false` fora do local (`k8s/configmap.yaml`)
+- [x] Métricas expostas (`app/Support/Metrics.php`, coberto por `tests/Feature/MetricsTest.php`)
+- [x] Decisões arquiteturais prontas para defesa oral (ver [apresentacao-n2.md](../apresentacao-n2.md))
 
 ## Fecha o projeto
 
