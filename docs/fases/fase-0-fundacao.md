@@ -138,13 +138,13 @@ Cada item tem uma checagem executável — "parece certo" não conta:
 
 ## Concluída quando
 
-- [ ] `php artisan route:list` roda sem erro
-- [ ] `php artisan migrate` cria as tabelas no MySQL do compose
-- [ ] `./vendor/bin/pest` passa
-- [ ] `lefthook.yml` e `.github/workflows/ci.yml` existem e o workflow ficou verde no PR
-- [ ] `.env` **não** está no repositório; `.env.example` está
-- [ ] `docs/` está commitada
-- [ ] O repositório tem histórico
+- [x] `php artisan route:list` roda sem erro (28 rotas)
+- [x] `php artisan migrate` cria as tabelas no MySQL do compose (`migrate:status`: 5 migrations `Ran`)
+- [x] `./vendor/bin/pest` passa (53 testes, 112 assertions)
+- [x] `lefthook.yml` e `.github/workflows/ci.yml` existem e o workflow ficou verde no PR
+- [x] `.env` **não** está no repositório; `.env.example` está
+- [x] `docs/` está commitada
+- [x] O repositório tem histórico
 
 ## Próxima
 

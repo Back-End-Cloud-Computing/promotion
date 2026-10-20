@@ -37,7 +37,8 @@ sala toda. Este roteiro cobre a parte do `promotion`; a ordem final depende do g
 
 ## Antes do dia
 
-- [ ] Imagem publicada (`bascratki/promotion`) e testada com `ImagePullPolicy` real.
+- [x] Imagem publicada: `bascratki/promotion:1.0.0`, multi-arch (amd64 e arm64), em 19/10/2026.
+- [ ] Imagem testada com `ImagePullPolicy` real no cluster.
 - [ ] PROMO-002 executado com token real.
 - [ ] Dashboard do Grafana exportado em JSON.
 - [ ] Ensaio com o grupo; tempo por pessoa.
