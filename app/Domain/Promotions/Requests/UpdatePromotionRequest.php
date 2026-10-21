@@ -16,6 +16,14 @@ class UpdatePromotionRequest extends FormRequest
         return true;
     }
 
+    // Aceita o id como número ou string (ObjectId do Mongo) e grava sempre string.
+    protected function prepareForValidation(): void
+    {
+        if (is_int($this->input('product_id'))) {
+            $this->merge(['product_id' => (string) $this->input('product_id')]);
+        }
+    }
+
     /**
      * @return array<string, ValidationRule|array<mixed>|string>
      */
@@ -23,7 +31,7 @@ class UpdatePromotionRequest extends FormRequest
     {
         return [
             'product_id' => [
-                'sometimes', 'integer', 'min:1',
+                'sometimes', 'string', 'min:1', 'max:64',
                 Rule::unique('promotions', 'product_id')->ignore($this->route('promotion')),
             ],
             'discount_percentage' => ['sometimes', 'integer', 'between:1,100'],

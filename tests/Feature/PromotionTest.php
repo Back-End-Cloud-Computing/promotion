@@ -18,6 +18,16 @@ function asAdminPromotion(): array
 
 // Mesma regra do cupom: unicidade é conflito (409), contra a constraint UNIQUE
 // de verdade — não validação de formato da aplicação.
+it('cria promoção para produto com id string do Mongo', function () {
+    postJson('/api/promotions', [
+        'product_id' => '6ad83139dbb96e49bc0aef29',
+        'discount_percentage' => 15,
+        'category' => 'Superiores',
+    ], asAdminPromotion())
+        ->assertCreated()
+        ->assertJsonPath('data.product_id', '6ad83139dbb96e49bc0aef29');
+});
+
 it('recusa promoção para produto que já tem uma', function () {
     Promotion::factory()->create(['product_id' => 1]);
 

@@ -19,8 +19,8 @@ use InvalidArgumentException;
 class DiscountCalculator
 {
     /**
-     * @param  array<int, array{product_id: int, unit_price: string|float, quantity: int}>  $items
-     * @param  array<int, int>  $discountByProduct  product_id => percentual já resolvido
+     * @param  array<int, array{product_id: string, unit_price: string|float, quantity: int}>  $items
+     * @param  array<string, int>  $discountByProduct  product_id => percentual já resolvido
      * @return array<string, mixed>
      */
     public function calculate(array $items, array $discountByProduct, ?Coupon $coupon = null): array
@@ -53,7 +53,7 @@ class DiscountCalculator
             $subtotalWithDiscount += $discountedPrice * $quantity;
 
             $details[] = [
-                'product_id' => (int) $item['product_id'],
+                'product_id' => $item['product_id'],
                 'unit_price' => $this->toDecimal($unitPrice),
                 'quantity' => $quantity,
                 'discount_percentage' => $pct,
