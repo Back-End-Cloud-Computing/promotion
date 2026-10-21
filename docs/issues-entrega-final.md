@@ -27,7 +27,7 @@ Fonte: manifests em `k8s/` de cada `main`, `gh run list` e a API do Docker Hub.
 
 | Repo (dono) | CI na main | `/metrics` | Imagem publicada | Helm | Grafana JSON | Observação |
 |---|---|---|---|---|---|---|
-| `promotion` (Lucas) | verde | sim | `bascratki/promotion:1.0.0`, amd64 e arm64 | chart pronto, sem teste em cluster | falta | Ingress só com `/api` e `/docs` |
+| `promotion` (Lucas) | verde | sim (negócio e HTTP) | `bascratki/promotion:1.0.0`, amd64 e arm64 | chart instalado no Minikube em 21/10 (1 réplica) | falta | Ingress só com `/api` e `/docs` |
 | `api-gateway` (Lucas) | verde | sim (porta 9100) | só no GHCR; `bascratki/api-gateway` não existe no Docker Hub | falta | falta | manifest aponta para o Docker Hub |
 | `support` (Eduardo) | verde (scaffold) | falta | sem código, sem imagem | falta | falta | exigência do professor; 14 issues abertas |
 | `order` (Rodrigo) | verde | falta | `ganjj-order:local`, não publicada | falta | falta | sem Ingress; compose usa `host.docker.internal` |
@@ -73,6 +73,19 @@ Criadas em 20/10/2026, dono `@LucasStop`. Rastreio no `promotion`: [#44](https:/
 | [#17](https://github.com/Back-End-Cloud-Computing/api-gateway/issues/17) | `test: confirm routes against the real upstream paths and service names` | R2 | serviços de pé |
 | [#18](https://github.com/Back-End-Cloud-Computing/api-gateway/issues/18) | `test: deploy on minikube with all upstreams behind api.ganjj.local` | R1, R2 | #9, #13, aula de 03/11 |
 | [#19](https://github.com/Back-End-Cloud-Computing/api-gateway/issues/19) | `feat: install prometheus and grafana in the cluster` | R2 | aulas de 27/10 e 03/11; a #12 depende dela |
+
+### Estado em 21/10/2026
+
+Depois do [teste de integração](teste-integracao-2026-10.md) e das entregas do dia.
+
+| Estado | Issues |
+|---|---|
+| Feito e fechado | `promotion` #48 métricas HTTP, #53 teste dos 11, #58 `product_id` string; `api-gateway` #17 rotas, #22 yarn, #23 timeout de `POST /products` |
+| Parcial, evidência comentada na issue | `promotion` #45 Helm (instalado em 1 réplica), #49 JWT (token real aceito por gateway, client e cart); `api-gateway` #13 e2e, #18 deploy no Minikube (falta o scrape do Prometheus) |
+| Decidido, pendente de outro repo | `promotion` #50 e #51 (REST interno agora; fila depende do aceite do Rodrigo), #52 (cart e order) |
+| Falta fazer (nosso) | `promotion` #46 pull real da imagem; `api-gateway` #9 e #16 (precisam do `docker login` do Lucas) |
+| Depende das aulas | `api-gateway` #11 Helm (27/10), #19 e #12 Prometheus e Grafana (03/11), `promotion` #47 dashboard (03/11) |
+| Ensaio | `promotion` #54, `api-gateway` #14 (até 07/11) |
 
 ## 4. Issues dos outros repos (criadas em 20/10/2026)
 

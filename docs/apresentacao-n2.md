@@ -14,7 +14,7 @@ sala toda. Este roteiro cobre a parte do `promotion`; a ordem final depende do g
 | 4 | `/internal` e `/metrics` não vazam | mesma chamada em `/internal/...` e `/metrics`: 404 | R2 |
 | 5 | JWT RS256 | token real do `authorization`; admin 200, sem token 401 (ver PROMO-002) | R2 |
 | 6 | Cálculo de desconto | `POST /internal/discounts/calculate` com `x-internal-secret` | R1 |
-| 7 | Observabilidade | `/metrics` por `port-forward`; painel no Grafana com os 3 contadores | R2 |
+| 7 | Observabilidade | `/metrics` por `port-forward`; painel no Grafana com os contadores de negócio, requisições por rota e latência | R2 |
 | 8 | Distribuição | `helm install` (após a aula de 27/10) | R2 |
 
 ## Decisões para defender (R3)
@@ -26,6 +26,8 @@ sala toda. Este roteiro cobre a parte do `promotion`; a ordem final depende do g
 - Liveness sem banco, readiness com banco: lentidão do MySQL não derruba todos os pods.
 - Ingress por lista de permissão (`/api`, `/docs`); `/internal` protegido por rede e por segredo.
 - Métricas de domínio (`motivo` de recusa) em vez de só métricas HTTP; contadores por pod.
+- Consumo do cupom por REST interno, não por fila: a rubrica aceita "REST e/ou fila" e o contrato do evento depende do Order (ver `fases/fase-4-integracao.md`).
+- `product_id` é string porque o Product usa ObjectId do Mongo; inteiro ainda é aceito.
 - RS256 com chave pública em ConfigMap: não é segredo. Segredos só em Secret.
 
 ## Perguntas prováveis
@@ -35,9 +37,13 @@ sala toda. Este roteiro cobre a parte do `promotion`; a ordem final depende do g
 - Os contadores zeram se o pod reinicia? Sim; o Prometheus trata reset de counter (`rate()`/`increase()`).
 - Quem chama o `promotion`? Pelo ADR do Order, o Cart compõe a cotação (INT-002); hoje ninguém chama.
 
+- Vocês testaram tudo junto? Sim, em 21/10: 11 repos no Compose e no Minikube, com achados e issues por dono (`teste-integracao-2026-10.md`).
+- Por que não tem fila? Ver a decisão acima; a proposta de contrato do evento está escrita e depende do aceite do Order.
+
 ## Antes do dia
 
 - [x] Imagem publicada: `bascratki/promotion:1.0.0`, multi-arch (amd64 e arm64), em 19/10/2026.
+- [x] Chart Helm instalado no Minikube (21/10, 1 réplica, `/api/sale` 200 pelo Ingress).
 - [ ] Imagem testada com `ImagePullPolicy` real no cluster.
 - [ ] PROMO-002 executado com token real.
 - [ ] Dashboard do Grafana exportado em JSON.
