@@ -24,5 +24,8 @@ Ajustes comuns:
 | Banco externo | `--set mysql.enabled=false --set config.DB_HOST=<host>` |
 | Sem Ingress | `--set ingress.enabled=false` |
 
-Ainda não testado em cluster: `helm lint` e `helm template` passam e a saída tem os mesmos recursos do `k8s/`.
+Testado em 21/10/2026 num Minikube limpo (v1.37): `helm lint` limpo, `helm install` com o `values.yaml` padrão
+(2 réplicas, `existingSecret`) sobe 2 pods `1/1` e o MySQL, com a imagem puxada do Docker Hub. Pelo Ingress,
+`/api/sale` responde 200 e `/internal`, `/metrics` e `/health/ready` dão 404: o Ingress só roteia `/api` e `/docs`,
+e as probes do Kubernetes chamam o pod direto, sem passar por ele.
 Se a turma definir outro padrão na aula de 27/10, o chart se ajusta a ele.
