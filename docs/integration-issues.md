@@ -19,15 +19,21 @@ coisa. IDs `PROMO-*` são específicos deste serviço.
 | ID | Tema | Serviços afetados | Situação | Bloqueia agora? |
 | --- | --- | --- | --- | --- |
 | INT-001 | Contrato de JWT (RS256 vs HS256) | Authorization, Order, Cart, Promotion | Resolvido — Order e Cart migraram pra RS256 | Não — falta só validar ponta a ponta com token real |
-| INT-002 | Cotação final do carrinho | Cart, Product, Promotion e Order | Pendente | Não para desenvolvimento; sim para integração final |
+| INT-002 | Cotação final do carrinho | Cart, Product, Promotion e Order | Confirmado quebrado (21/10): cart chama rotas que o Product não expõe e o Product não tem preço nem estoque | Sim, para integração final |
 | INT-006 | Autenticação interna | Cart, Order e Promotion | Pendente | Não |
 | PROMO-001 | Consumo de `pedido.confirmado` via RabbitMQ | Order e Promotion | Pendente | Não |
-| INT-009 | Porta errada do Product nos consumidores | Order, Cart, Product | Confirmado (código) | Sim — Order↔Product e Cart↔Product não conectam sem sobrescrever a env var |
+| INT-009 | Porta errada do Product nos consumidores | Order, Cart, Product | Confirmado em Compose e Minikube (21/10): Service `product-api`, consumidores chamam `product` | Sim — Order↔Product e Cart↔Product não conectam sem sobrescrever a env var |
 | INT-010 | `shopping-cart` sem `.env.example` no repo | Cart | Confirmado (repo) | Não bloqueia outros serviços, mas quebra o setup de quem clona `shopping-cart` do zero |
 | PROMO-003 | Ingress expunha `/internal` | Promotion | Resolvido (18/10) — allowlist `/api` + `/docs` | Não |
 | PROMO-004 | Observabilidade (`/metrics`, Prometheus, Grafana) | Todos | Promotion pronto; demais pendentes | Sim, para R2 da N2 |
 | PROMO-005 | Helm (aula 27/10) | Todos | Pendente | Sim, para R2 da N2 |
-| PROMO-002 | Validar JWT RS256 ponta a ponta | Authorization, Order, Cart, Promotion | Pendente (teste) | Não — mas fecha de vez o risco de INT-001 |
+| PROMO-002 | Validar JWT RS256 ponta a ponta | Authorization, Order, Cart, Promotion | Parcial (21/10): token real do authorization aceito pelo gateway, client e cart; Order e Promotion pendentes | Não — mas fecha de vez o risco de INT-001 |
+| INT-011 | `POST /api/pedidos` devolve 500 (validação de record no .NET 10) | Order | Confirmado em Compose e Minikube (21/10) | Sim — nenhum pedido é criado |
+| INT-012 | `POST /products` leva ~15 s e o gateway corta em 10 s | Product, Gateway | Confirmado (21/10) | Não, mas duplica SKU em retry |
+| INT-013 | `product_id` inteiro no promotion, id string no Product | Promotion, Product | Confirmado (21/10) | Sim para a cotação |
+| INT-014 | llm-provider, embedding-reranking e vector-db públicos pelo Ingress | IA | Confirmado no Minikube (21/10) | Não, falha de segurança |
+
+Teste de ponta a ponta de 21/10: [teste-integracao-2026-10.md](teste-integracao-2026-10.md).
 
 ## 3. Prontidão N1/N2 por serviço
 
