@@ -224,7 +224,9 @@ O incremento é atômico (`UPDATE ... WHERE usage_count < usage_limit`), então 
 ### `GET /metrics`
 
 Formato texto do Prometheus: `promocao_calculos_total`, `promocao_cupons_aplicados_total` e
-`promocao_cupons_recusados_total{motivo}`. Sem autenticação e **sem rota no Ingress** — só o Prometheus, de dentro
+`promocao_cupons_recusados_total{motivo}`, mais `promocao_http_requests_total{metodo,rota,classe}` (rota é o
+template, ex.: `api/coupons/{code}/validate`; classe é `2xx`, `4xx`...) e o histograma
+`promocao_http_request_duration_seconds{metodo,rota,le}`. Sem autenticação e **sem rota no Ingress** — só o Prometheus, de dentro
 do cluster, deve alcançá-lo. Não é parte do contrato de negócio.
 
 ### `GET /health` e `GET /health/ready`

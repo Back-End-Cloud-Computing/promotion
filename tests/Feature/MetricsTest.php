@@ -60,3 +60,40 @@ it('separa as recusas por motivo, sem usar a mensagem livre como label', functio
 it('não exige segredo interno nem JWT em /metrics', function () {
     get('/metrics')->assertOk();
 });
+
+it('conta requisições por rota normalizada e classe de status, sem o código do cupom no label', function () {
+    get('/api/sale')->assertOk();
+    get('/api/coupons/ABC123/validate');
+    get('/api/coupons/OUTRO99/validate');
+    get('/rota-que-nao-existe')->assertNotFound();
+
+    $body = get('/metrics')->assertOk()->getContent();
+
+    expect($body)
+        ->toContain('promocao_http_requests_total{metodo="GET",rota="api/sale",classe="2xx"} 1')
+        ->toContain('promocao_http_requests_total{metodo="GET",rota="desconhecida",classe="4xx"} 1')
+        ->not->toContain('ABC123')
+        ->not->toContain('OUTRO99');
+
+    // As duas chamadas de cupom caem na mesma série, qualquer que seja o status.
+    preg_match_all('/promocao_http_requests_total\{metodo="GET",rota="api\/coupons\/\{code\}\/validate",classe="\dxx"\} (\d+)/', $body, $m);
+    expect(array_sum($m[1]))->toBe(2);
+});
+
+it('expõe o histograma de duração com buckets cumulativos, soma e contagem', function () {
+    get('/api/sale')->assertOk();
+
+    $body = get('/metrics')->getContent();
+
+    expect($body)
+        ->toContain('# TYPE promocao_http_request_duration_seconds histogram')
+        ->toContain('promocao_http_request_duration_seconds_bucket{metodo="GET",rota="api/sale",le="+Inf"} 1')
+        ->toContain('promocao_http_request_duration_seconds_count{metodo="GET",rota="api/sale"} 1')
+        ->toContain('promocao_http_request_duration_seconds_sum{metodo="GET",rota="api/sale"}');
+});
+
+it('não conta o próprio /metrics', function () {
+    get('/metrics');
+
+    expect(get('/metrics')->getContent())->not->toContain('rota="metrics"');
+});
