@@ -221,6 +221,10 @@ um uso e um cupom de 500 usos se esgotaria sem nenhuma venda.
 O incremento é atômico (`UPDATE ... WHERE usage_count < usage_limit`), então duas compras simultâneas no
 último uso disponível não passam as duas.
 
+O endpoint **não é idempotente**: não recebe `pedido_id`, então repetir a chamada consome de novo. O Pedido não
+deve repetir em timeout. Idempotência por `pedido_id` virá com o consumidor RabbitMQ, quando o contrato do evento
+for aceito pelo Order (decisão em [fase 4](fases/fase-4-integracao.md#decisão-de-21102026-rest-interno-agora-fila-pendente-do-order)).
+
 ### `GET /metrics`
 
 Formato texto do Prometheus: `promocao_calculos_total`, `promocao_cupons_aplicados_total` e

@@ -36,7 +36,37 @@ O que precisa ser combinado:
 - Que o cálculo **não** consome uso e o fechamento **sim** — se o Carrinho chamar `consumir`, um cupom de 500
   usos se esgota sem nenhuma venda.
 
-### 2. Consumidor RabbitMQ
+### Decisão de 21/10/2026: REST interno agora, fila pendente do Order
+
+O consumo do cupom no fechamento do pedido fica no **REST interno** (`POST /internal/coupons/{code}/consume`,
+já em produção no serviço e coberto por teste). O consumidor RabbitMQ **não será implementado antes** de o
+Order aceitar um contrato de evento.
+
+Por quê:
+
+- **A rubrica aceita REST "e/ou" fila.** O REST interno já satisfaz o critério sozinho (ver acima); a fila é
+  reforço, não requisito.
+- **O contrato não é nosso.** Exchange, fila, routing key e payload dependem do Order (Rodrigo), que ainda
+  não confirmou nada. Inventar o contrato do lado do consumidor obriga o Order a se adaptar ou gera
+  retrabalho nos dois lados.
+- **Custo e risco.** Consumidor novo traz dependência (`php-amqplib`), Deployment separado, broker no cluster
+  e teste de reentrega. É a parte da fase que mais pode atrasar a entrega de 10/11.
+- **O REST já está integrado ao resto.** A cotação e o consumo usam o mesmo `INTERNAL_SECRET` e o mesmo
+  caminho do Carrinho e do Pedido (INT-002 e INT-006).
+
+Limite conhecido do REST: o `consume` **não recebe `pedido_id`**, então um retry do Pedido depois de um
+timeout consome o cupom duas vezes. Mitigação até a fila existir: o Order não repete a chamada de consumo
+em timeout. A idempotência por `pedido_id` entra junto do consumidor, quando o contrato for fechado.
+
+Sai do pendente quando o Rodrigo aceitar o contrato abaixo; a issue [#50](https://github.com/Back-End-Cloud-Computing/promotion/issues/50) segue aberta e
+[#51](https://github.com/Back-End-Cloud-Computing/promotion/issues/51) (consumidor) depende dela.
+
+**Proposta de contrato para o Rodrigo aceitar ou corrigir:** exchange `pedidos` (direct), routing key
+`pedido.confirmado`, fila durável `promocao.pedido-confirmado`, payload JSON
+`{"pedido_id": "<guid>", "cupom_codigo": "INVERNO20|null", "itens": [{"product_id": "<string>", "quantidade": 1}]}`,
+idempotência por `pedido_id`.
+
+### 2. Consumidor RabbitMQ (pendente do contrato com o Order)
 
 **O evento:** o serviço de Pedido publica `pedido.confirmado` com `{pedido_id, cupom_codigo, itens}`. Este
 serviço consome e incrementa `usos` do cupom.
