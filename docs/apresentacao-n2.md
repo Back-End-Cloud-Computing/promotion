@@ -45,6 +45,6 @@ sala toda. Este roteiro cobre a parte do `promotion`; a ordem final depende do g
 - [x] Imagem publicada: `bascratki/promotion:1.0.0`, multi-arch (amd64 e arm64), em 19/10/2026.
 - [x] Chart Helm instalado no Minikube (21/10, 1 réplica, `/api/sale` 200 pelo Ingress).
 - [ ] Imagem testada com `ImagePullPolicy` real no cluster.
-- [ ] PROMO-002 executado com token real.
+- [x] PROMO-002 executado com token real (21/10, chave de lab; repetir com a chave oficial do Eduardo).
 - [ ] Dashboard do Grafana exportado em JSON.
 - [ ] Ensaio com o grupo; tempo por pessoa.
