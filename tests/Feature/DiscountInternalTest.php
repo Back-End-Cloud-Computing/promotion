@@ -37,6 +37,20 @@ it('calcula o desconto de um carrinho com promoção e cupom', function () {
     ]);
 });
 
+// O Product identifica os produtos por ObjectId do Mongo (string), não por inteiro.
+it('calcula o desconto para produto com id string do Mongo', function () {
+    $id = '6ad83139dbb96e49bc0aef29';
+    Promotion::factory()->create(['product_id' => $id, 'discount_percentage' => 20]);
+
+    postJson('/internal/discounts/calculate', [
+        'items' => [['product_id' => $id, 'unit_price' => 100, 'quantity' => 1]],
+    ], internal())
+        ->assertOk()
+        ->assertJsonPath('items.0.product_id', $id)
+        ->assertJsonPath('items.0.discount_percentage', 20)
+        ->assertJsonPath('total', '80.00');
+});
+
 it('devolve 200 com o motivo quando o cupom não existe', function () {
     Promotion::factory()->create(['product_id' => 1, 'discount_percentage' => 10]);
 

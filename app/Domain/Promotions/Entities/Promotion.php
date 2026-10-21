@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
  * @property int $id
- * @property int $product_id
+ * @property string $product_id
  * @property int|null $campaign_id
  * @property int $discount_percentage
  * @property ProductCategory $category
@@ -33,7 +33,7 @@ class Promotion extends Model
     protected function casts(): array
     {
         return [
-            'product_id' => 'integer',
+            'product_id' => 'string',
             'discount_percentage' => 'integer',
             'category' => ProductCategory::class,
             'active' => 'boolean',

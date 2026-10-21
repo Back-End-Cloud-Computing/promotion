@@ -107,10 +107,10 @@ Todas exigem JWT com `isAdmin: true`.
 
 ```json
 // POST request
-{ "product_id": 42, "discount_percentage": 20, "category": "Superiores", "campaign_id": null }
+{ "product_id": "6ad83139dbb96e49bc0aef29", "discount_percentage": 20, "category": "Superiores", "campaign_id": null }
 
 // 201
-{ "id": 1, "product_id": 42, "discount_percentage": 20, "category": "Superiores",
+{ "id": 1, "product_id": "6ad83139dbb96e49bc0aef29", "discount_percentage": 20, "category": "Superiores",
   "campaign_id": null, "active": true, "created_at": "2026-08-12T14:00:00Z" }
 ```
 
@@ -154,6 +154,8 @@ Fora do API Gateway. Exige `x-internal-secret`; sem ele, **403**.
 
 ### `POST /internal/discounts/calculate`
 
+`product_id` é string (ObjectId do Product, até 64 caracteres). Número inteiro ainda é aceito e tratado como string, para não quebrar chamadores antigos.
+
 **O endpoint principal para Carrinho e Pedido.** Recebe os itens com preço (o chamador já tem esse dado do
 serviço de Produto) e devolve o detalhamento do desconto.
 
@@ -161,8 +163,8 @@ serviço de Produto) e devolve o detalhamento do desconto.
 // request
 {
   "items": [
-    { "product_id": 1, "unit_price": 49.90, "quantity": 2 },
-    { "product_id": 7, "unit_price": 120.00, "quantity": 1 }
+    { "product_id": "6ad83139dbb96e49bc0aef29", "unit_price": 49.90, "quantity": 2 },
+    { "product_id": "6ad83139dbb96e49bc0aef2a", "unit_price": 120.00, "quantity": 1 }
   ],
   "coupon": "INVERNO20"
 }
@@ -176,9 +178,9 @@ serviço de Produto) e devolve o detalhamento do desconto.
   "coupon_discount": "37.97",
   "total": "151.89",
   "items": [
-    { "product_id": 1, "unit_price": "49.90", "quantity": 2,
+    { "product_id": "6ad83139dbb96e49bc0aef29", "unit_price": "49.90", "quantity": 2,
       "discount_percentage": 30, "discounted_price": "34.93", "subtotal": "69.86" },
-    { "product_id": 7, "unit_price": "120.00", "quantity": 1,
+    { "product_id": "6ad83139dbb96e49bc0aef2a", "unit_price": "120.00", "quantity": 1,
       "discount_percentage": 0, "discounted_price": "120.00", "subtotal": "120.00" }
   ],
   "coupon": { "code": "INVERNO20", "type": "percentage", "value": "20.00", "applied": true }

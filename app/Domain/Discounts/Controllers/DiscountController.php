@@ -28,9 +28,17 @@ class DiscountController extends Controller
      */
     public function calculate(Request $request): JsonResponse
     {
-        $validator = Validator::make($request->all(), [
+        // Aceita o id como número ou string (ObjectId do Mongo) e trata sempre como string.
+        $input = $request->all();
+        foreach ($input['items'] ?? [] as $i => $item) {
+            if (is_array($item) && is_int($item['product_id'] ?? null)) {
+                $input['items'][$i]['product_id'] = (string) $item['product_id'];
+            }
+        }
+
+        $validator = Validator::make($input, [
             'items' => ['required', 'array', 'min:1'],
-            'items.*.product_id' => ['required', 'integer', 'min:1'],
+            'items.*.product_id' => ['required', 'string', 'min:1', 'max:64'],
             'items.*.unit_price' => ['required', 'numeric', 'min:0'],
             'items.*.quantity' => ['required', 'integer', 'min:1'],
             'coupon' => ['nullable', 'string', 'max:32'],
@@ -42,7 +50,7 @@ class DiscountController extends Controller
             return response()->error(422, 'Há campos inválidos na requisição.', $fields);
         }
 
-        $items = $request->input('items');
+        $items = $input['items'];
         $code = $request->input('coupon');
 
         $result = $this->calculator->calculate(
@@ -108,8 +116,8 @@ class DiscountController extends Controller
      * promoção da categoria faria um produto de 30% ser cobrado a 40% só porque
      * outro item da mesma categoria está mais barato.
      *
-     * @param  array<int, int>  $productIds
-     * @return array<int, int>
+     * @param  array<int, string>  $productIds
+     * @return array<string, int>
      */
     private function discountsFor(array $productIds): array
     {
