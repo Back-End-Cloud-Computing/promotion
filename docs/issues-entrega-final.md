@@ -4,7 +4,7 @@ Levantamento de **20/10/2026** feito com `gh`, Docker Hub e clones limpos de cad
 
 Rubrica da N2 (Plano de Ensino, aula 12): **R1** arquitetura distribuída em Kubernetes (4,0), **R2** segurança, distribuição e observabilidade (3,0), **R3** apresentação técnica (3,0). É em equipe, para a sala toda, sem frontend.
 
-> Os repos dos outros integrantes não são editados por este projeto. Para eles, as issues abaixo são **texto pronto para o dono colar**. As do `promotion` e do `api-gateway` já foram criadas (links na seção 3).
+> As issues dos repos dos outros integrantes foram **criadas por mim com o dono como assignee**, a pedido do Lucas (seção 4). Nenhum código ou texto de issue deles foi editado; as únicas mudanças em issues existentes foram os labels de origem no `support` (#1 a #14) e o fechamento das 3 duplicadas que eu mesmo criei lá.
 
 ## 1. Definição de pronto: "tudo funcionando"
 
@@ -14,7 +14,7 @@ A entrega está pronta quando, a partir de clones limpos e sem imagem local:
 - [ ] Fluxo ponta a ponta pelo gateway: registrar e logar no `authorization`, usar o token em `/clients`, `/products`, carrinho, pedido e promoções; sem token ou com token inválido, 401.
 - [ ] Cotação e consumo de cupom: o carrinho chama o `promotion` com `x-internal-secret` e o pedido consome o cupom (REST interno e/ou fila).
 - [ ] Pedido criado gera notificação pelo serviço de suporte (e-mail no Mailpit), sem derrubar o pedido se o suporte falhar.
-- [ ] Observabilidade: cada serviço expõe `/metrics` (fora do Ingress), o Prometheus raspa e há um dashboard Grafana em JSON por serviço.
+- [ ] Observabilidade da solução (professor): Prometheus e Grafana instalados no cluster, raspando o gateway, com um painel único em JSON. `/metrics` e dashboard por serviço são extra nosso.
 - [ ] Helm: um chart por serviço, instalando com `values.yaml` (imagem, réplicas, recursos, host).
 - [ ] Segurança: `/internal` e `/metrics` não aparecem no Ingress, serviços internos sem Ingress público, nenhuma senha em texto nos manifests, JWT RS256 validado com chave pública real.
 - [ ] Roteiro e ensaio com o grupo, com tempo por pessoa.
@@ -48,7 +48,7 @@ Achados que atravessam repositórios:
 
 ## 3. Issues do `promotion` e do `api-gateway`
 
-Criadas em 20/10/2026, dono `@LucasStop`. Rastreio no `promotion`: [#44](https://github.com/Back-End-Cloud-Computing/promotion/issues/44) e guarda-chuva da N2: [#37](https://github.com/Back-End-Cloud-Computing/promotion/issues/37).
+Criadas em 20/10/2026, dono `@LucasStop`. Rastreio no `promotion`: [#44](https://github.com/Back-End-Cloud-Computing/promotion/issues/44) e [#56](https://github.com/Back-End-Cloud-Computing/promotion/issues/56). A [#37](https://github.com/Back-End-Cloud-Computing/promotion/issues/37) é a **issue mãe** do `promotion` e as #44 a #54 são sub-issues dela.
 
 **`promotion`**
 
@@ -65,82 +65,55 @@ Criadas em 20/10/2026, dono `@LucasStop`. Rastreio no `promotion`: [#44](https:/
 | [#53](https://github.com/Back-End-Cloud-Computing/promotion/issues/53) | `test: full stack on compose and minikube with the 11 services` | R1 | nada |
 | [#54](https://github.com/Back-End-Cloud-Computing/promotion/issues/54) | `docs: rehearse the n2 demo` | R3 | todos os serviços de pé |
 
-**`api-gateway`** (já abertas: #9 multi-arch no Docker Hub, #11 Helm, #12 Grafana, #13 e2e com token real, #14 ensaio)
+**`api-gateway`** (já abertas: #9 multi-arch no Docker Hub, #11 Helm, #12 painel Grafana único da solução, #13 e2e com token real, #14 ensaio; sem issue mãe)
 
 | Issue | Título | Rubrica | Depende de |
 |---|---|---|---|
 | [#16](https://github.com/Back-End-Cloud-Computing/api-gateway/issues/16) | `fix: align the k8s image reference with a published tag` | R1 | #9 |
 | [#17](https://github.com/Back-End-Cloud-Computing/api-gateway/issues/17) | `test: confirm routes against the real upstream paths and service names` | R2 | serviços de pé |
 | [#18](https://github.com/Back-End-Cloud-Computing/api-gateway/issues/18) | `test: deploy on minikube with all upstreams behind api.ganjj.local` | R1, R2 | #9, #13, aula de 03/11 |
+| [#19](https://github.com/Back-End-Cloud-Computing/api-gateway/issues/19) | `feat: install prometheus and grafana in the cluster` | R2 | aulas de 27/10 e 03/11; a #12 depende dela |
 
-## 4. Issues que faltam nos outros repos (texto pronto)
+## 4. Issues dos outros repos (criadas em 20/10/2026)
 
-Cada repo já tem uma issue "N2 readiness" em formato de checklist (CI, métricas, Helm, Ingress, porta do Product, chave pública). Abaixo está só o que **não** está coberto por elas. Padrão do projeto: título em inglês `tipo: resumo`, corpo curto com **Pronto quando** e **Rubrica**.
+As 65 issues abaixo foram criadas em 20/10/2026 por [#56](https://github.com/Back-End-Cloud-Computing/promotion/issues/56), cada uma com o dono como assignee. Em `order`, `shopping-cart`, `authorization`, `client`, `product`, `llm-provider`, `embedding-reranking` e `vector-db` a #1 ("N2 readiness") é a **issue mãe** e as novas são **sub-issues** dela: a barra de progresso da #1 mostra o avanço e ela só fecha quando todas as filhas fecharem. No `support` as 3 issues foram criadas soltas, sem mãe, e depois fechadas como duplicadas (ver abaixo). No `api-gateway` não há mãe; o repo já nasceu com issues próprias.
 
-### Todos os outros 8 repos (repetir em cada um; o `support` já tem as duas: #10 e #14)
+### Origem: professor x nossa
 
-- `feat: grafana dashboard exported as json`. Dashboard do serviço exportado em JSON e versionado no repo, importável sem edição. **Pronto quando:** painéis de requisições, erros e latência do serviço. **Depende:** aula de 03/11. **Rubrica:** R2.
-- `docs: rehearse the n2 demo`. Cada dono sabe explicar o próprio serviço (porquê da stack, banco, segurança) e demonstrar o fluxo que passa por ele. **Pronto quando:** ensaio feito até 07/11. **Rubrica:** R3.
+Cada issue tem o label `origem: professor` ou `origem: nossa`, para filtrar. O critério é o Plano de Ensino (`_PE Backend Cloud Computing.pdf`):
+
+- **professor**: está no cronograma ou na rubrica da N2. Helm (aula 10, 27/10), JWT (aula 9, 20/10), integração ponta a ponta e deploy em Kubernetes (R1, "demonstrando arquitetura, distribuição, segurança e integração entre serviços"), serviço de suporte e gateway (Aula 07) e a apresentação (R3).
+- **nossa**: decisão do grupo ou necessidade técnica. `/metrics` por serviço (a rubrica pede observabilidade da solução, não de cada serviço), CI, `.env.example`, imagem multi-arch, remover Ingress público, senha fora do manifest, compose, health, nome e porta do Product, contrato RabbitMQ, dashboard por serviço.
+
+A observabilidade da solução vem do gateway (porta de entrada de tudo): [api-gateway#19](https://github.com/Back-End-Cloud-Computing/api-gateway/issues/19) instala Prometheus e Grafana no cluster e a [api-gateway#12](https://github.com/Back-End-Cloud-Computing/api-gateway/issues/12) é o painel único da solução (`origem: professor`). Filtro: `gh issue list -R Back-End-Cloud-Computing/<repo> --label "origem: professor"`.
+
+| Repo (dono) | Mãe | Filhas | Professor | Nossa |
+|---|---|---|---|---|
+| `order` (Rodrigo) | [#1](https://github.com/Back-End-Cloud-Computing/order/issues/1) | [#4](https://github.com/Back-End-Cloud-Computing/order/issues/4), [#5](https://github.com/Back-End-Cloud-Computing/order/issues/5), [#6](https://github.com/Back-End-Cloud-Computing/order/issues/6), [#7](https://github.com/Back-End-Cloud-Computing/order/issues/7), [#8](https://github.com/Back-End-Cloud-Computing/order/issues/8), [#9](https://github.com/Back-End-Cloud-Computing/order/issues/9), [#10](https://github.com/Back-End-Cloud-Computing/order/issues/10), [#11](https://github.com/Back-End-Cloud-Computing/order/issues/11), [#12](https://github.com/Back-End-Cloud-Computing/order/issues/12) | 3 | 6 |
+| `shopping-cart` (João Liz) | [#1](https://github.com/Back-End-Cloud-Computing/shopping-cart/issues/1) | [#2](https://github.com/Back-End-Cloud-Computing/shopping-cart/issues/2), [#3](https://github.com/Back-End-Cloud-Computing/shopping-cart/issues/3), [#4](https://github.com/Back-End-Cloud-Computing/shopping-cart/issues/4), [#5](https://github.com/Back-End-Cloud-Computing/shopping-cart/issues/5), [#6](https://github.com/Back-End-Cloud-Computing/shopping-cart/issues/6), [#7](https://github.com/Back-End-Cloud-Computing/shopping-cart/issues/7), [#8](https://github.com/Back-End-Cloud-Computing/shopping-cart/issues/8), [#9](https://github.com/Back-End-Cloud-Computing/shopping-cart/issues/9), [#10](https://github.com/Back-End-Cloud-Computing/shopping-cart/issues/10) | 2 | 7 |
+| `authorization` (Eduardo) | [#1](https://github.com/Back-End-Cloud-Computing/authorization/issues/1) | [#2](https://github.com/Back-End-Cloud-Computing/authorization/issues/2), [#3](https://github.com/Back-End-Cloud-Computing/authorization/issues/3), [#4](https://github.com/Back-End-Cloud-Computing/authorization/issues/4), [#5](https://github.com/Back-End-Cloud-Computing/authorization/issues/5), [#6](https://github.com/Back-End-Cloud-Computing/authorization/issues/6), [#7](https://github.com/Back-End-Cloud-Computing/authorization/issues/7), [#8](https://github.com/Back-End-Cloud-Computing/authorization/issues/8), [#9](https://github.com/Back-End-Cloud-Computing/authorization/issues/9), [#10](https://github.com/Back-End-Cloud-Computing/authorization/issues/10) | 4 | 5 |
+| `client` (Eduardo) | [#1](https://github.com/Back-End-Cloud-Computing/client/issues/1) | [#2](https://github.com/Back-End-Cloud-Computing/client/issues/2), [#3](https://github.com/Back-End-Cloud-Computing/client/issues/3), [#4](https://github.com/Back-End-Cloud-Computing/client/issues/4), [#5](https://github.com/Back-End-Cloud-Computing/client/issues/5), [#6](https://github.com/Back-End-Cloud-Computing/client/issues/6), [#7](https://github.com/Back-End-Cloud-Computing/client/issues/7), [#8](https://github.com/Back-End-Cloud-Computing/client/issues/8) | 2 | 5 |
+| `product` (João Correa) | [#1](https://github.com/Back-End-Cloud-Computing/product/issues/1) | [#2](https://github.com/Back-End-Cloud-Computing/product/issues/2), [#3](https://github.com/Back-End-Cloud-Computing/product/issues/3), [#4](https://github.com/Back-End-Cloud-Computing/product/issues/4), [#5](https://github.com/Back-End-Cloud-Computing/product/issues/5), [#6](https://github.com/Back-End-Cloud-Computing/product/issues/6), [#7](https://github.com/Back-End-Cloud-Computing/product/issues/7), [#8](https://github.com/Back-End-Cloud-Computing/product/issues/8) | 2 | 5 |
+| `llm-provider` (João Correa) | [#1](https://github.com/Back-End-Cloud-Computing/llm-provider/issues/1) | [#2](https://github.com/Back-End-Cloud-Computing/llm-provider/issues/2), [#3](https://github.com/Back-End-Cloud-Computing/llm-provider/issues/3), [#4](https://github.com/Back-End-Cloud-Computing/llm-provider/issues/4), [#5](https://github.com/Back-End-Cloud-Computing/llm-provider/issues/5), [#6](https://github.com/Back-End-Cloud-Computing/llm-provider/issues/6), [#7](https://github.com/Back-End-Cloud-Computing/llm-provider/issues/7), [#8](https://github.com/Back-End-Cloud-Computing/llm-provider/issues/8) | 2 | 5 |
+| `embedding-reranking` (João Correa) | [#1](https://github.com/Back-End-Cloud-Computing/embedding-reranking/issues/1) | [#2](https://github.com/Back-End-Cloud-Computing/embedding-reranking/issues/2), [#3](https://github.com/Back-End-Cloud-Computing/embedding-reranking/issues/3), [#4](https://github.com/Back-End-Cloud-Computing/embedding-reranking/issues/4), [#5](https://github.com/Back-End-Cloud-Computing/embedding-reranking/issues/5), [#6](https://github.com/Back-End-Cloud-Computing/embedding-reranking/issues/6), [#7](https://github.com/Back-End-Cloud-Computing/embedding-reranking/issues/7), [#8](https://github.com/Back-End-Cloud-Computing/embedding-reranking/issues/8) | 2 | 5 |
+| `vector-db` (João Correa) | [#1](https://github.com/Back-End-Cloud-Computing/vector-db/issues/1) | [#2](https://github.com/Back-End-Cloud-Computing/vector-db/issues/2), [#3](https://github.com/Back-End-Cloud-Computing/vector-db/issues/3), [#4](https://github.com/Back-End-Cloud-Computing/vector-db/issues/4), [#5](https://github.com/Back-End-Cloud-Computing/vector-db/issues/5), [#6](https://github.com/Back-End-Cloud-Computing/vector-db/issues/6), [#7](https://github.com/Back-End-Cloud-Computing/vector-db/issues/7), [#8](https://github.com/Back-End-Cloud-Computing/vector-db/issues/8) | 2 | 5 |
+
+Títulos, "Pronto quando" e rubrica de cada uma estão na própria issue.
 
 ### `support` (Eduardo)
 
-Já tem 14 issues (#1 a #14) cobrindo scaffold, endpoint, SQLite, e-mail, SMS e WhatsApp, métricas, imagem, manifests, Helm, Grafana, RabbitMQ e e2e. Faltam:
+Já tinha as issues #1 a #14 (scaffold, endpoint, SQLite, e-mail, SMS e WhatsApp, métricas, imagem, manifests, Helm, Grafana, RabbitMQ, e2e e ensaio). As três que criei ([#16](https://github.com/Back-End-Cloud-Computing/support/issues/16), [#17](https://github.com/Back-End-Cloud-Computing/support/issues/17), [#18](https://github.com/Back-End-Cloud-Computing/support/issues/18)) duplicavam a #8, #2, #11 e #13 e foram **fechadas como not planned**, com comentário apontando a issue que já cobre. Labels: `origem: professor` nas #1 a #5, #8, #9, #13 e #14; `origem: nossa` nas #6, #7, #10, #11 e #12.
 
-- `feat: health and ready endpoints`. `GET /health` e `/health/ready` para as probes do Kubernetes. **Pronto quando:** manifest usa as duas rotas. **Rubrica:** R1.
-- `docs: record the internal secret and the event contract agreed with order`. `INTERNAL_SECRET` e o payload `OrderCreated` alinhados com o Rodrigo (issue #2 do `order`). **Pronto quando:** contrato igual nos dois repos e secret igual nos dois Secrets. **Rubrica:** R2.
-- `chore: align service name and port with the gateway and k8s manifests`. Service `support` na porta 8090, como o `order` espera. **Rubrica:** R1.
+### `order`: issues já existentes
 
-### `order` (Rodrigo)
-
-Existentes: #1 (Ingress, imagem, métricas, contrato RabbitMQ, porta do Product, Helm), #2 (notificar o suporte), #3 (headers atrás do gateway). Faltam:
-
-- `fix: use the real product service name and port (int-009)`. `k8s/order.yaml` usa `http://product:8000` e o Service do Product é `product-api`; o `.env.example` aponta para a porta 3002 e o Product publica 8000. **Pronto quando:** `Services__Product__BaseUrl` resolve no cluster e o default do `.env.example` é 8000. **Rubrica:** R1.
-- `build: publish multi-arch image to docker hub`. Hoje o manifest usa `ganjj-order:local`. **Pronto quando:** `docker buildx imagetools inspect <imagem>:<tag>` lista amd64 e arm64 e o manifest aponta para ela. **Rubrica:** R1.
-- `test: end-to-end through the gateway`. Criar pedido por `api.ganjj.local` com token real e ver cotação do carrinho e e-mail do suporte. **Rubrica:** R1, R2.
-
-### `shopping-cart` (João Liz)
-
-Existente: #1 (`.env.example`, CI, métricas, porta do Product, cotação do Promotion, JWT, Helm). Faltam:
-
-- `fix: use the real product service name`. `k8s/shopping-cart.yaml` usa `http://product:8000`; o Service é `product-api`. **Rubrica:** R1.
-- `build: publish multi-arch image`. `jcliz/shopping-cart:1.0.0` existe só para amd64. **Pronto quando:** amd64 e arm64 na mesma tag. **Rubrica:** R1.
-- `feat: call the promotion quote and consume endpoints (int-002)`. Já é item da #1; vale uma issue própria para rastrear com o `promotion` ([#52](https://github.com/Back-End-Cloud-Computing/promotion/issues/52)). **Rubrica:** R1.
-
-### `authorization` (Eduardo)
-
-Existente: #1 (CI, métricas, chave pública e usuário de teste, aula de JWT, Helm). Faltam:
-
-- `build: publish multi-arch image`. `eduardofabri/authorization:1.1.0` existe só para arm64; numa máquina Intel o pod falha com `exec format error`. **Rubrica:** R1.
-- `fix: move database and admin passwords out of the k8s manifest`. `DB_PASSWORD`, `ADMIN_PASSWORD` e `ORACLE_PASSWORD` estão em texto em `k8s/authorization.yaml` e `k8s/oracle.yaml`. **Pronto quando:** valores vêm de um Secret criado por script, como já é feito para `jwt-keys`. **Rubrica:** R2.
-
-### `client` (Eduardo)
-
-Existente: #1 (CI, métricas, Helm). Faltam:
-
-- `build: publish multi-arch image`. `eduardofabri/client:1.1.0` só arm64. **Rubrica:** R1.
-- `fix: move the database password out of the k8s manifest`. `DB_PASSWORD` e `POSTGRES_PASSWORD` em texto em `k8s/client.yaml` e `k8s/postgres.yaml`. **Rubrica:** R2.
-
-### `product` (João Correa)
-
-Existente: #1 (métricas, porta publicada, imagem pública, Helm). Faltam:
-
-- `fix: committed docker-compose only works inside a monorepo`. `build: ./product` e `env_file: ./product/.env` não existem no repo isolado. **Pronto quando:** `docker compose up` funciona num clone limpo. **Rubrica:** R1.
-- `build: publish multi-arch image`. `joao2006/product:1.0.0` só amd64. **Rubrica:** R1.
-- `docs: tell order and cart the service name is product-api`. Confirmar `product-api:8000` como nome canônico (ou criar o Service `product`) e avisar os dois. **Rubrica:** R1.
-
-### `llm-provider`, `embedding-reranking`, `vector-db` (João Correa)
-
-Existentes: #1 em cada um (Ingress público, métricas, Helm). Faltam, em cada repo:
-
-- `fix: committed docker-compose only works inside a monorepo` (mesmo problema do `product`).
-- `build: publish multi-arch image`. Tags `1.0.0` só amd64. **Rubrica:** R1.
+A #2 (notificar o suporte) e a #3 (headers atrás do gateway) continuam como estavam; só a #1 é mãe das novas.
 
 ### Decisões do grupo (sem dono único)
 
-Abrir como issue no `promotion` (#37) ou combinar no grupo:
+Combinar no grupo (registrar em issue do `promotion` se virar tarefa):
 
 - **Padrão de Helm**: um chart por serviço ou guarda-chuva; `values.yaml` com imagem, réplicas, recursos e host. Sugestão: um chart por serviço, igual ao `helm/promotion`.
-- **Padrão de Prometheus e Grafana**: `GET /metrics`, anotações `prometheus.io/*`, `/metrics` fora do Ingress, um dashboard por serviço.
+- **Padrão de Prometheus e Grafana**: a rubrica pede observabilidade da solução, então o mínimo é o gateway. `GET /metrics`, anotações `prometheus.io/*` e `/metrics` fora do Ingress por serviço é decisão nossa, não do professor.
 - **Ambiente da demo**: Minikube (padrão dos laboratórios, sem custo) ou Amazon EKS (laboratório da aula 06, consome crédito do Learner Lab).
 - **Imagem**: todas multi-arch (`docker buildx build --platform linux/amd64,linux/arm64`), com a mesma tag do manifest.
 - **Ordem das falas** e quem conduz a demo ao vivo.
