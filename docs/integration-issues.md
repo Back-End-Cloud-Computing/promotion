@@ -21,7 +21,7 @@ coisa. IDs `PROMO-*` são específicos deste serviço.
 | INT-001 | Contrato de JWT (RS256 vs HS256) | Authorization, Order, Cart, Promotion | Resolvido — Order e Cart migraram pra RS256 | Não — falta só validar ponta a ponta com token real |
 | INT-002 | Cotação final do carrinho | Cart, Product, Promotion e Order | Confirmado quebrado (21/10): cart chama rotas que o Product não expõe e o Product não tem preço nem estoque | Sim, para integração final |
 | INT-006 | Autenticação interna | Cart, Order e Promotion | Pendente | Não |
-| PROMO-001 | Consumo de `pedido.confirmado` via RabbitMQ | Order e Promotion | Pendente | Não |
+| PROMO-001 | Consumo de `pedido.confirmado` via RabbitMQ | Order e Promotion | Decidido em 21/10: REST interno agora, fila pendente do aceite do Order | Não |
 | INT-009 | Porta errada do Product nos consumidores | Order, Cart, Product | Confirmado em Compose e Minikube (21/10): Service `product-api`, consumidores chamam `product` | Sim — Order↔Product e Cart↔Product não conectam sem sobrescrever a env var |
 | INT-010 | `shopping-cart` sem `.env.example` no repo | Cart | Confirmado (repo) | Não bloqueia outros serviços, mas quebra o setup de quem clona `shopping-cart` do zero |
 | PROMO-003 | Ingress expunha `/internal` | Promotion | Resolvido (18/10) — allowlist `/api` + `/docs` | Não |
@@ -145,6 +145,10 @@ diferente sem que ninguém perceba até testar de ponta a ponta.
 **Responsável:** todo o grupo.
 
 ### PROMO-001 — Consumo de `pedido.confirmado` via RabbitMQ
+
+**Decisão de 21/10/2026:** o consumo fica no REST interno (`/internal/coupons/{code}/consume`); o consumidor só
+entra quando o Order aceitar o contrato proposto em
+[`fase-4-integracao.md`](fases/fase-4-integracao.md#decisão-de-21102026-rest-interno-agora-fila-pendente-do-order).
 
 **Situação atual:** planejado em `docs/fases/fase-4-integracao.md`, não implementado. Sem
 `php-amqplib` no `composer.json`, sem consumidor.
