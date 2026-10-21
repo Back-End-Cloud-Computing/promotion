@@ -10,6 +10,7 @@ Documentação de arquitetura e planejamento do serviço. Escrita para ser lida 
 | [Contrato da API](contrato-api.md) | Referência de endpoints para quem vai **consumir** este serviço (Carrinho, Pedido, Gateway) |
 | [Regras de negócio](regras-de-negocio.md) | As regras de desconto e cupom, com os casos de teste que provam cada uma |
 | [Mapa de issues da entrega final](issues-entrega-final.md) | O que falta de issue em cada repo e o que precisa estar pronto para a N2 rodar de ponta a ponta |
+| [Teste de integração 21/10](teste-integracao-2026-10.md) | Os 11 repos no Compose e no Minikube: o que sobe, o que quebra e as issues geradas |
 | [Alinhamento JWT/RS256](alinhamento-jwt-rs256.md) | ✅ Resolvido — ver [ADR 0002](adr/0002-jwt-rs256-chave-estatica.md); falta só validar com token real do Autorização |
 
 ## Fases de execução
