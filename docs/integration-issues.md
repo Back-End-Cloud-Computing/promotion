@@ -27,7 +27,7 @@ coisa. IDs `PROMO-*` são específicos deste serviço.
 | PROMO-003 | Ingress expunha `/internal` | Promotion | Resolvido (18/10) — allowlist `/api` + `/docs` | Não |
 | PROMO-004 | Observabilidade (`/metrics`, Prometheus, Grafana) | Todos | Promotion pronto; demais pendentes | Sim, para R2 da N2 |
 | PROMO-005 | Helm (aula 27/10) | Todos | Pendente | Sim, para R2 da N2 |
-| PROMO-002 | Validar JWT RS256 ponta a ponta | Authorization, Order, Cart, Promotion | Parcial (21/10): token real do authorization aceito pelo gateway, client e cart; Order e Promotion pendentes | Não — mas fecha de vez o risco de INT-001 |
+| PROMO-002 | Validar JWT RS256 ponta a ponta | Authorization, Order, Cart, Promotion | Executado em 21/10 com a chave de lab (todos os itens, Promotion incluído); falta repetir com a chave oficial do Eduardo | Não — mas fecha de vez o risco de INT-001 |
 | INT-011 | `POST /api/pedidos` devolve 500 (validação de record no .NET 10) | Order | Confirmado em Compose e Minikube (21/10) | Sim — nenhum pedido é criado |
 | INT-012 | `POST /products` leva ~15 s e o gateway corta em 10 s | Product, Gateway | Confirmado (21/10) | Não, mas duplica SKU em retry |
 | INT-013 | `product_id` inteiro no promotion, id string no Product | Promotion, Product | Confirmado (21/10) | Sim para a cotação |
@@ -95,19 +95,23 @@ re-executado depois delas.
 
 **Checklist do teste:**
 
-- [ ] `GET /auth/public-key` no `authorization`, pegar o PEM.
-- [ ] Configurar `JWT_PUBLIC_KEY` no `.env` do `promotion` com esse PEM.
-- [ ] Subir `authorization` + `promotion`.
-- [ ] `POST /auth/login` no `authorization`, pegar um `accessToken` real (RS256, claims
+- [x] `GET /auth/public-key` no `authorization`, pegar o PEM.
+- [x] Configurar `JWT_PUBLIC_KEY` no `.env` do `promotion` com esse PEM.
+- [x] Subir `authorization` + `promotion`.
+- [x] `POST /auth/login` no `authorization`, pegar um `accessToken` real (RS256, claims
       `sub`/`email`/`role`/`typ`, `iss=ganjj-authorization`).
-- [ ] Chamar uma rota admin do `promotion` (campaigns/promotions/coupons) com
+- [x] Chamar uma rota admin do `promotion` (campaigns/promotions/coupons) com
       `Authorization: Bearer <token>` e confirmar 200 em vez de 401.
-- [ ] Confirmar o mapeamento de claims: `sub→id`, `role==='ADMIN'→isAdmin` (comparação exata
+- [x] Confirmar o mapeamento de claims: `sub→id`, `role==='ADMIN'→isAdmin` (comparação exata
       maiúscula); `role=CLIENTE` sem acesso admin.
-- [ ] Confirmar `iss==='ganjj-authorization'` e `typ==='access'` — um refresh token não deve
+- [x] Confirmar `iss==='ganjj-authorization'` e `typ==='access'` — um refresh token não deve
       passar.
-- [ ] Exercitar os casos de erro: `JWT_PUBLIC_KEY` vazia → 500; token expirado → 401; assinatura
+- [x] Exercitar os casos de erro: `JWT_PUBLIC_KEY` vazia → 500; token expirado → 401; assinatura
       inválida → 401; formato inválido → 401.
+
+**Execução de 21/10/2026 (chave de lab):** rodado contra o `authorization` local, subido do clone com um par de chaves gerado por `scripts/generate-keys.sh`. Falta repetir só com a chave e o usuário oficiais do Eduardo, o que troca `JWT_PUBLIC_KEY` e não muda código.
+
+Resultados em `GET /api/campaigns`: admin 200; sem token 401; role CLIENTE 403; refresh token como bearer 401; token expirado 401; `iss` errado 401; assinatura adulterada ou de outra chave 401; formato inválido 401; `JWT_PUBLIC_KEY` vazia 500.
 
 **Nota:** nenhuma env var nova além de `JWT_PUBLIC_KEY`, nenhuma dependência nova (`firebase/php-jwt`
 já instalado) — não é um bloqueio de escopo, só falta executar.
