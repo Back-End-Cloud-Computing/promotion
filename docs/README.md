@@ -9,6 +9,7 @@ Documentação de arquitetura e planejamento do serviço. Escrita para ser lida 
 | [Arquitetura e plano geral](arquitetura.md) | Por que este serviço existe, modelo de dados, camadas, contrato REST, decisões e o porquê de cada uma |
 | [Contrato da API](contrato-api.md) | Referência de endpoints para quem vai **consumir** este serviço (Carrinho, Pedido, Gateway) |
 | [Regras de negócio](regras-de-negocio.md) | As regras de desconto e cupom, com os casos de teste que provam cada uma |
+| [Mapa de issues da entrega final](issues-entrega-final.md) | O que falta de issue em cada repo e o que precisa estar pronto para a N2 rodar de ponta a ponta |
 | [Alinhamento JWT/RS256](alinhamento-jwt-rs256.md) | ✅ Resolvido — ver [ADR 0002](adr/0002-jwt-rs256-chave-estatica.md); falta só validar com token real do Autorização |
 
 ## Fases de execução
