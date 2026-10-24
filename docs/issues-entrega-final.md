@@ -135,4 +135,10 @@ Combinar no grupo (registrar em issue do `promotion` se virar tarefa):
 
 ## 5. Como manter este documento
 
-Rodar o `ganjj-check` (sincroniza os clones e reconfere a integração) depois de cada aula e antes do ensaio, e atualizar as tabelas das seções 2 e 3. O teste integrado ([#53](https://github.com/Back-End-Cloud-Computing/promotion/issues/53)) vai confirmar ou refutar os achados da seção 2 e alimentar [`integration-issues.md`](integration-issues.md).
+Rodar o `ganjj-check` (sincroniza os clones, reconfere a integração e olha issues, PRs e e-mail) depois de cada aula e antes do ensaio, e atualizar as tabelas das seções 2 e 3.
+
+O `ganjj-check` cobre os 11 repos (os 9 de antes mais `api-gateway` e `support`) e olha o que mudou desde a última execução (primeira vez, ou com `--since`/`--days`: 3 dias). Ele lê tudo e não escreve em nenhum repo:
+
+- **Script** (`scripts/ganjj-check.sh --issues`): issues novas, atualizadas e fechadas (com bloqueios `blocked by` abertos), PRs (estado, rascunho, CI, revisão) e commits na `main`. Marca como divergência a issue fechada à mão, sem commit nem PR, e o commit direto na `main`, sem PR.
+- **E-mail** (passo do comando `/ganjj-check`, pelo Gmail, somente leitura): notificações do GitHub da mesma janela, cruzadas com a saída do script, para achar o que só o e-mail mostra, como comentários.
+- **Divergências**: o comando relata e deixa rascunhos de comentário prontos para as issues. Nada é postado sem a aprovação do Lucas, e comentar em repo de outro integrante depende da autorização dele. O teste integrado ([#53](https://github.com/Back-End-Cloud-Computing/promotion/issues/53)) vai confirmar ou refutar os achados da seção 2 e alimentar [`integration-issues.md`](integration-issues.md).
