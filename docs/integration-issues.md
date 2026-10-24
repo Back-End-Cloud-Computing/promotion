@@ -19,17 +19,17 @@ coisa. IDs `PROMO-*` são específicos deste serviço.
 | ID | Tema | Serviços afetados | Situação | Bloqueia agora? |
 | --- | --- | --- | --- | --- |
 | INT-001 | Contrato de JWT (RS256 vs HS256) | Authorization, Order, Cart, Promotion | Resolvido — Order e Cart migraram pra RS256 | Não — falta só validar ponta a ponta com token real |
-| INT-002 | Cotação final do carrinho | Cart, Product, Promotion e Order | Cart chama `calculate` desde 23/10 (`82dbbfb`, `2bf1dfa`). Falta o Product expor preço e estoque (product#9): sem isso adicionar item devolve 502. O consumo do cupom segue sem chamador (Order) | Sim, para integração final |
+| INT-002 | Cotação final do carrinho | Cart, Product, Promotion e Order | Cart chama `calculate` desde 23/10 (`82dbbfb`, `2bf1dfa`). O Product expõe `price` e `stock` desde 24/10 (product#9 fechada, `fb7b26b`); falta rodar Cart → Product → Promotion em execução. O consumo do cupom segue sem chamador (Order) | Sim, para integração final |
 | INT-006 | Autenticação interna | Cart, Order e Promotion | Parcial — Cart envia `x-internal-secret` ao Promotion (23/10); Order ainda não chama; valor idêntico não conferido em execução | Não |
 | PROMO-001 | Consumo de `pedido.confirmado` via RabbitMQ | Order e Promotion | Decidido em 21/10: REST interno agora, fila pendente do aceite do Order | Não |
-| INT-009 | Porta errada do Product nos consumidores | Order, Cart, Product | Cart resolvido em 23/10 (`2017c3b`, aponta para `product-api:8000`). Order segue com `product` no manifest e `:3002` no `.env.example` (order#11); Product confirma a porta (product#8) | Sim — Order↔Product não conecta sem sobrescrever a env var |
+| INT-009 | Porta errada do Product nos consumidores | Order, Cart, Product | Cart resolvido em 23/10 (`2017c3b`, aponta para `product-api:8000`). Product confirmou a porta em 24/10 (product#8, `330bb05`). Order segue com `product` no manifest e `:3002` no `.env.example` (order#11) | Sim — Order↔Product não conecta sem sobrescrever a env var |
 | INT-010 | `shopping-cart` sem `.env.example` no repo | Cart | Resolvido (23/10, `d09fa67`) | Não |
 | PROMO-003 | Ingress expunha `/internal` | Promotion | Resolvido (18/10) — allowlist `/api` + `/docs` | Não |
-| PROMO-004 | Observabilidade (`/metrics`, Prometheus, Grafana) | Todos | Promotion, API Gateway e Cart expõem `/metrics`; demais pendentes | Sim, para R2 da N2 |
-| PROMO-005 | Helm (aula 27/10) | Todos | Pendente | Sim, para R2 da N2 |
+| PROMO-004 | Observabilidade (`/metrics`, Prometheus, Grafana) | Todos | Promotion, API Gateway, Cart, Product, vector-db e embedding-reranking expõem `/metrics`; faltam Order, Authorization, Client, llm-provider e Support | Sim, para R2 da N2 |
+| PROMO-005 | Helm (aula 27/10) | Todos | Promotion, Product, vector-db e embedding-reranking têm chart; faltam os demais | Sim, para R2 da N2 |
 | PROMO-002 | Validar JWT RS256 ponta a ponta | Authorization, Order, Cart, Promotion | Executado em 21/10 com a chave de lab (todos os itens, Promotion incluído); falta repetir com a chave oficial do Eduardo | Não — mas fecha de vez o risco de INT-001 |
 | INT-011 | `POST /api/pedidos` devolve 500 (validação de record no .NET 10) | Order | Confirmado em Compose e Minikube (21/10) | Sim — nenhum pedido é criado |
-| INT-012 | `POST /products` leva ~15 s e o gateway corta em 10 s | Product, Gateway | Gateway ajustado em 21/10 (timeout de 30 s só nessa rota). O Product continua lento (product#10) | Não, mas duplica SKU em retry |
+| INT-012 | `POST /products` leva ~15 s e o gateway corta em 10 s | Product, Gateway | Resolvido nos dois lados: gateway com timeout de 30 s só nessa rota (21/10) e Product respondendo 201 antes do pipeline de LLM e indexação, que roda em segundo plano (product#10, `c134557`, 24/10). Não rodado em execução | Não |
 | INT-013 | `product_id` inteiro no promotion, id string no Product | Promotion, Product | Resolvido no Promotion em 21/10 (`fe1328c`): aceita string, inteiro continua aceito. O Cart já envia string | Não |
 | INT-014 | llm-provider, embedding-reranking e vector-db públicos pelo Ingress | IA | Confirmado no Minikube (21/10) | Não, falha de segurança |
 
@@ -57,9 +57,9 @@ N1.
 | shopping-cart | ✅ (08/09) | ✅ | ✅ valida | desde 23/10: CI verde, `/metrics`, imagem `jcliz/shopping-cart:1.1.0` multi-arch, Ingress só com `/api/cart`, `/docs`, `/openapi.json` e `/health`; sem Helm |
 
 Observabilidade (Prometheus/métricas): expõem `/metrics` o `promotion` (18/10), o `api-gateway` (porta 9100) e o
-`shopping-cart` (23/10, `37f8945`). Os outros 7 repos não têm. O Plano de Ensino (aula 11, 03/11) cobra Prometheus
-e Grafana na N2, e Helm (aula 10, 27/10): ambos entram no R2 (3,0). Só o `promotion` tem chart Helm (instalado no
-Minikube em 21/10); nenhum outro repo tem.
+`shopping-cart` (23/10, `37f8945`); em 24/10 entraram `product`, `vector-db` e `embedding-reranking` (commits diretos na `main`, issues #2 de cada um fechadas). Faltam `order`, `authorization`, `client`, `llm-provider` e `support`. O Plano de Ensino (aula 11, 03/11) cobra Prometheus
+e Grafana na N2, e Helm (aula 10, 27/10): ambos entram no R2 (3,0). Têm chart Helm o `promotion` (instalado no
+Minikube em 21/10) e, desde 24/10, `product`, `vector-db` e `embedding-reranking`, ainda não instalados por nós; os dashboards do Grafana em JSON existem nos mesmos três mais o `shopping-cart` e o `promotion` (#47 ainda por fazer).
 
 ## 4. Pendências detalhadas
 
@@ -137,8 +137,11 @@ carrinho volta sem desconto com `discounts_applied: false`, em vez de derrubar a
 `promotion:8000` configurado no manifest do Cart bate com o nosso. O Cart não chama `consume`.
 
 **Ainda não rodei Cart → Promotion em execução:** o contrato foi conferido lendo o código. O preço
-do item vem do Product, que ainda não expõe `price` nem `stock` (product#9); até lá o Cart devolve 502
-"Product has no price" ao adicionar item (cart#11).
+do item vem do Product, que passou a expor `price` e `stock` em 24/10 (product#9 fechada, `fb7b26b`,
+lido no código, não rodado). Antes disso o Cart devolvia 502 "Product has no price" ao adicionar item.
+O cart#11 segue aberto (o lado do Cart foi feito em `2bf1dfa`); com o Product atualizado, falta
+repetir o fluxo no Compose ou no Minikube. O estoque (`/internal/products/{id}/stock/decrement` e
+`restore`, com `Idempotency-Key`) é para o Order; não afeta o Promotion.
 
 **Consumo do cupom:** `POST /internal/coupons/{code}/consume` continua sem chamador. `order` ainda
 não faz essa chamada (promotion#50 e #52).
@@ -309,9 +312,11 @@ completo e atual de issues está em [issues-entrega-final.md](issues-entrega-fin
 | `shopping-cart` | João Liz | entregues no `main` em 23/10: CI, `.env.example`, `/metrics`, porta do Product, imagem multi-arch e chamada ao Promotion (INT-002). Faltam Helm (cart#5), dashboard (cart#6, parcial) e o preço vindo do Product (cart#11) |
 | `authorization` | Eduardo | sem CI; sem `/metrics`; confirmar `GET /auth/public-key` para o teste do PROMO-002 |
 | `client` | Eduardo | sem CI; sem `/metrics` |
-| `product` | João Correa | sem `/metrics`; confirmar porta 8000 (INT-009) |
-| `llm-provider`, `embedding-reranking`, `vector-db` | João Correa | Ingress público apesar de só o `product` chamá-los; sem `/metrics` |
+| `product` | João Correa | entregue no `main` em 24/10: `/metrics`, porta 8000 confirmada, preço e estoque, `POST /products` assíncrono, Helm, Grafana, imagem `1.1.0` multi-arch, Ingress sem `/internal` nem `/metrics`. Falta só o ensaio (#6) e fechar a mãe (#1) |
+| `vector-db` | João Correa | entregue em 24/10: Ingress público removido, `/metrics`, Helm, Grafana, compose autônomo, imagem `1.1.0` multi-arch. Falta o ensaio (#6) |
+| `embedding-reranking` | João Correa | em 24/10: Ingress removido, `/metrics`, Helm, Grafana, compose autônomo. Falta a imagem multi-arch (#3, hoje `1.0.0` só amd64) e o ensaio (#6) |
+| `llm-provider` | João Correa | nada entregue ainda: #2 a #8 abertas (Ingress público, `/metrics`, Helm, Grafana, imagem só amd64, compose) |
 | API Gateway | Lucas | repo [`api-gateway`](https://github.com/Back-End-Cloud-Computing/api-gateway) criado em 19/10/2026; implementado, com imagem `bascratki/api-gateway:1.0.0` (amd64 e arm64), testado no Minikube e com token real em 21/10. Faltam Helm, Prometheus e Grafana no cluster e o dashboard da solução |
 | Serviço de suporte (e-mail/SMS/WhatsApp) | Eduardo | repo [`support`](https://github.com/Back-End-Cloud-Computing/support) criado em 19/10/2026 com docs, issues e scaffold provisório em Go; Eduardo confirma a stack; o `order` precisa chamá-lo (issue aberta no `order`) |
 
-Fora do código do `promotion`: nenhum serviço tem Helm ou Prometheus/Grafana. Padrão do grupo a combinar.
+Fora do código do `promotion`: Helm e dashboard existem em `product`, `vector-db` e `embedding-reranking`; Prometheus e Grafana no cluster ainda não rodam em nenhum (aula de 03/11). Padrão do grupo a combinar.

@@ -31,19 +31,19 @@ Fonte: manifests em `k8s/` de cada `main`, `gh run list` e a API do Docker Hub.
 | `api-gateway` (Lucas) | verde | sim (porta 9100) | `bascratki/api-gateway:1.0.0`, amd64 e arm64 (21/10) | falta | falta | testado no Minikube e com token real em 21/10 |
 | `support` (Eduardo) | verde (scaffold) | falta | sem código, sem imagem | falta | falta | exigência do professor; 14 issues abertas |
 | `order` (Rodrigo) | verde | falta | `ganjj-order:local`, não publicada | falta | falta | sem Ingress por decisão do grupo (order#9 fechada como not planned em 23/10); compose usa `host.docker.internal` |
-| `shopping-cart` (João Liz) | verde (23/10) | sim (23/10) | `jcliz/shopping-cart:1.1.0`, amd64 e arm64 (23/10) | falta (cart#5) | parcial (cart#6) | `.env.example` voltou; aponta para `product-api:8000` e chama o `promotion`; preço depende de product#9 |
+| `shopping-cart` (João Liz) | verde (23/10) | sim (23/10) | `jcliz/shopping-cart:1.1.0`, amd64 e arm64 (23/10) | falta (cart#5) | parcial (cart#6) | `.env.example` voltou; aponta para `product-api:8000` e chama o `promotion`; preço vem do Product, que o expõe desde 24/10 (product#9); falta rodar o fluxo |
 | `authorization` (Eduardo) | **sem CI** | falta | `eduardofabri/authorization:1.1.0`, só arm64 | falta | falta | senhas do banco e do admin em texto no manifest |
 | `client` (Eduardo) | **sem CI** | falta | `eduardofabri/client:1.1.0`, só arm64 | falta | falta | senha do Postgres em texto no manifest |
-| `product` (João Correa) | verde | falta | `joao2006/product:1.0.0`, só amd64 | falta | falta | Service chama `product-api` |
-| `llm-provider` (João Correa) | verde | falta | `joao2006/llm-provider:1.0.0`, só amd64 | falta | falta | Ingress público |
-| `embedding-reranking` (João Correa) | verde | falta | `joao2006/embedding-reranking:1.0.0`, só amd64 | falta | falta | Ingress público |
-| `vector-db` (João Correa) | verde | falta | `joao2006/vector-db:1.0.0`, só amd64 | falta | falta | Ingress público |
+| `product` (João Correa) | verde | sim (24/10) | `joao2006/product:1.1.0`, amd64 e arm64 (24/10) | chart em `helm/product` (24/10) | `grafana/product-dashboard.json` (24/10) | Service `product-api:8000` confirmado; expõe `price` e `stock`; `POST /products` responde antes do pipeline de LLM |
+| `llm-provider` (João Correa) | verde | falta (#2) | `joao2006/llm-provider:1.0.0`, só amd64 (#3) | falta (#4) | falta (#5) | Ingress público (#8); compose (#7) |
+| `embedding-reranking` (João Correa) | verde | sim (24/10) | `joao2006/embedding-reranking:1.0.0`, só amd64 (#3 aberta) | chart (24/10) | JSON (24/10) | Ingress removido (24/10) |
+| `vector-db` (João Correa) | verde | sim (24/10) | `joao2006/vector-db:1.1.0`, amd64 e arm64 (24/10) | chart (24/10) | JSON (24/10) | Ingress removido (24/10) |
 
 Achados que atravessam repositórios:
 
-- **Arquitetura mista de imagem.** As imagens do Eduardo são só arm64 e as do João Correa só amd64; as do `promotion`, do `api-gateway` e do `shopping-cart` (1.1.0, 23/10) já são multi-arch. Numa máquina Intel as do Eduardo dão `exec format error`; num Mac M-series as do João Correa rodam por emulação. Para a demo, todas precisam de `linux/amd64` e `linux/arm64`.
+- **Arquitetura mista de imagem.** As imagens do Eduardo são só arm64 e as do `embedding-reranking` e `llm-provider` só amd64; as do `promotion`, do `api-gateway`, do `shopping-cart` (1.1.0, 23/10), do `product` e do `vector-db` (1.1.0, 24/10) já são multi-arch; faltam `embedding-reranking` e `llm-provider` (só amd64). Numa máquina Intel as do Eduardo dão `exec format error`; num Mac M-series as só-amd64 rodam por emulação. Para a demo, todas precisam de `linux/amd64` e `linux/arm64`.
 - **Nome do Service do Product (INT-009).** O Service se chama `product-api` (`product/k8s/product.yaml`), mas `order/k8s/order.yaml` ainda usa `http://product:8000` (order#11); no cluster esse nome não resolve. O gateway e o `shopping-cart` (23/10) já usam `product-api`.
-- **Compose dos serviços de IA e do Product.** O `docker-compose.yml` versionado usa `build: ./product` e `env_file: ./product/.env` (layout de monorepo). Num clone do repo isolado não funciona; o `docker-compose.override.yml` que corrige isso não está no remoto.
+- **Compose dos serviços de IA e do Product.** Corrigido em 24/10 em `product`, `vector-db` e `embedding-reranking` (compose autônomo, a partir de um clone isolado; não rodei). Falta o `llm-provider` (#7).
 - **Ninguém chama o `promotion`** (INT-002) e não há fila RabbitMQ em nenhum manifest (PROMO-001).
 
 ## 3. Issues do `promotion` e do `api-gateway`
@@ -87,7 +87,7 @@ Depois do [teste de integração](teste-integracao-2026-10.md) e das entregas do
 | Depende das aulas | `api-gateway` #11 Helm (27/10), #19 e #12 Prometheus e Grafana (03/11), `promotion` #47 dashboard (03/11, depende da api-gateway#19) |
 | Ensaio | `promotion` #54, `api-gateway` #14 (até 07/11) |
 
-Desde 23/10 esses bloqueios também estão como dependência formal do GitHub (`blocked by`, 17 vínculos entre os repos): o cartão da issue mostra "Blocked", mas o GitHub não impede fechá-la.
+Em 24/10 João Correa fechou product#9 e #10 e vector-db#8 e #9 (commits diretos na `main`, sem PR); esses bloqueadores caíram. Desde 23/10 esses bloqueios também estão como dependência formal do GitHub (`blocked by`, 17 vínculos entre os repos): o cartão da issue mostra "Blocked", mas o GitHub não impede fechá-la.
 
 ## 4. Issues dos outros repos (criadas em 20/10/2026)
 
