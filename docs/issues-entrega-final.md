@@ -1,6 +1,6 @@
 # Mapa de issues para a entrega final (N2, 10/11/2026)
 
-Levantamento de **20/10/2026** feito com `gh`, Docker Hub e clones limpos de cada repo (branch `main`). Responde duas perguntas: o que falta de issue em cada repositório e o que precisa estar pronto para a apresentação rodar de ponta a ponta.
+Levantamento de **20/10/2026** feito com `gh`, Docker Hub e clones limpos de cada repo (branch `main`), com as seções 2 e 3 atualizadas em **24/10/2026** contra o `main` de cada repo, as issues e o Docker Hub. Responde duas perguntas: o que falta de issue em cada repositório e o que precisa estar pronto para a apresentação rodar de ponta a ponta.
 
 Rubrica da N2 (Plano de Ensino, aula 12): **R1** arquitetura distribuída em Kubernetes (4,0), **R2** segurança, distribuição e observabilidade (3,0), **R3** apresentação técnica (3,0). É em equipe, para a sala toda, sem frontend.
 
@@ -28,10 +28,10 @@ Fonte: manifests em `k8s/` de cada `main`, `gh run list` e a API do Docker Hub.
 | Repo (dono) | CI na main | `/metrics` | Imagem publicada | Helm | Grafana JSON | Observação |
 |---|---|---|---|---|---|---|
 | `promotion` (Lucas) | verde | sim (negócio e HTTP) | `bascratki/promotion:1.0.0`, amd64 e arm64 | chart instalado no Minikube em 21/10 (1 réplica) | falta | Ingress só com `/api` e `/docs` |
-| `api-gateway` (Lucas) | verde | sim (porta 9100) | só no GHCR; `bascratki/api-gateway` não existe no Docker Hub | falta | falta | manifest aponta para o Docker Hub |
+| `api-gateway` (Lucas) | verde | sim (porta 9100) | `bascratki/api-gateway:1.0.0`, amd64 e arm64 (21/10) | falta | falta | testado no Minikube e com token real em 21/10 |
 | `support` (Eduardo) | verde (scaffold) | falta | sem código, sem imagem | falta | falta | exigência do professor; 14 issues abertas |
-| `order` (Rodrigo) | verde | falta | `ganjj-order:local`, não publicada | falta | falta | sem Ingress; compose usa `host.docker.internal` |
-| `shopping-cart` (João Liz) | **sem CI** | falta | `jcliz/shopping-cart:1.0.0`, só amd64 | falta | falta | sem `.env.example` |
+| `order` (Rodrigo) | verde | falta | `ganjj-order:local`, não publicada | falta | falta | sem Ingress por decisão do grupo (order#9 fechada como not planned em 23/10); compose usa `host.docker.internal` |
+| `shopping-cart` (João Liz) | verde (23/10) | sim (23/10) | `jcliz/shopping-cart:1.1.0`, amd64 e arm64 (23/10) | falta (cart#5) | parcial (cart#6) | `.env.example` voltou; aponta para `product-api:8000` e chama o `promotion`; preço depende de product#9 |
 | `authorization` (Eduardo) | **sem CI** | falta | `eduardofabri/authorization:1.1.0`, só arm64 | falta | falta | senhas do banco e do admin em texto no manifest |
 | `client` (Eduardo) | **sem CI** | falta | `eduardofabri/client:1.1.0`, só arm64 | falta | falta | senha do Postgres em texto no manifest |
 | `product` (João Correa) | verde | falta | `joao2006/product:1.0.0`, só amd64 | falta | falta | Service chama `product-api` |
@@ -41,8 +41,8 @@ Fonte: manifests em `k8s/` de cada `main`, `gh run list` e a API do Docker Hub.
 
 Achados que atravessam repositórios:
 
-- **Arquitetura mista de imagem.** As imagens do Eduardo são só arm64 e as do João Correa e da Liz só amd64. Numa máquina Intel as do Eduardo dão `exec format error`; num Mac M-series as demais rodam por emulação. Para a demo, todas precisam de `linux/amd64` e `linux/arm64`.
-- **Nome do Service do Product (INT-009).** O Service se chama `product-api` (`product/k8s/product.yaml`), mas `order/k8s/order.yaml` e `shopping-cart/k8s/shopping-cart.yaml` usam `http://product:8000`. No cluster esse nome não resolve. O gateway já usa `product-api`.
+- **Arquitetura mista de imagem.** As imagens do Eduardo são só arm64 e as do João Correa só amd64; as do `promotion`, do `api-gateway` e do `shopping-cart` (1.1.0, 23/10) já são multi-arch. Numa máquina Intel as do Eduardo dão `exec format error`; num Mac M-series as do João Correa rodam por emulação. Para a demo, todas precisam de `linux/amd64` e `linux/arm64`.
+- **Nome do Service do Product (INT-009).** O Service se chama `product-api` (`product/k8s/product.yaml`), mas `order/k8s/order.yaml` ainda usa `http://product:8000` (order#11); no cluster esse nome não resolve. O gateway e o `shopping-cart` (23/10) já usam `product-api`.
 - **Compose dos serviços de IA e do Product.** O `docker-compose.yml` versionado usa `build: ./product` e `env_file: ./product/.env` (layout de monorepo). Num clone do repo isolado não funciona; o `docker-compose.override.yml` que corrige isso não está no remoto.
 - **Ninguém chama o `promotion`** (INT-002) e não há fila RabbitMQ em nenhum manifest (PROMO-001).
 
@@ -80,12 +80,14 @@ Depois do [teste de integração](teste-integracao-2026-10.md) e das entregas do
 
 | Estado | Issues |
 |---|---|
-| Feito e fechado | `promotion` #48 métricas HTTP, #53 teste dos 11, #58 `product_id` string; `api-gateway` #17 rotas, #22 yarn, #23 timeout de `POST /products` |
-| Parcial, evidência comentada na issue | `promotion` #45 Helm (instalado em 1 réplica), #49 JWT (token real aceito por gateway, client e cart); `api-gateway` #13 e2e, #18 deploy no Minikube (falta o scrape do Prometheus) |
-| Decidido, pendente de outro repo | `promotion` #50 e #51 (REST interno agora; fila depende do aceite do Rodrigo), #52 (cart e order) |
-| Falta fazer (nosso) | `promotion` #46 pull real da imagem; `api-gateway` #9 e #16 (precisam do `docker login` do Lucas) |
-| Depende das aulas | `api-gateway` #11 Helm (27/10), #19 e #12 Prometheus e Grafana (03/11), `promotion` #47 dashboard (03/11) |
+| Feito e fechado | `promotion` #45 Helm no Minikube, #46 pull real da imagem, #48 métricas HTTP, #53 teste dos 11, #58 `product_id` string; `api-gateway` #9 e #16 imagem publicada, #17 rotas, #22 yarn, #23 timeout de `POST /products` |
+| Executado com a chave de lab, falta a oficial do Eduardo | `promotion` #49 e `api-gateway` #13 (todos os itens rodados em 21/10; bloqueadas por authorization#8) |
+| Parcial | `api-gateway` #18 deploy no Minikube (falta o scrape do Prometheus, depende da #13 e da aula de 03/11) |
+| Decidido, pendente de outro repo | `promotion` #50 e #51 (REST interno agora; fila depende do aceite do Rodrigo, order#10), #52 (shopping-cart#11, order#13 e order#10) |
+| Depende das aulas | `api-gateway` #11 Helm (27/10), #19 e #12 Prometheus e Grafana (03/11), `promotion` #47 dashboard (03/11, depende da api-gateway#19) |
 | Ensaio | `promotion` #54, `api-gateway` #14 (até 07/11) |
+
+Desde 23/10 esses bloqueios também estão como dependência formal do GitHub (`blocked by`, 17 vínculos entre os repos): o cartão da issue mostra "Blocked", mas o GitHub não impede fechá-la.
 
 ## 4. Issues dos outros repos (criadas em 20/10/2026)
 
@@ -119,7 +121,7 @@ Já tinha as issues #1 a #14 (scaffold, endpoint, SQLite, e-mail, SMS e WhatsApp
 
 ### `order`: issues já existentes
 
-A #2 (notificar o suporte) e a #3 (headers atrás do gateway) continuam como estavam; só a #1 é mãe das novas.
+A #2 (notificar o suporte) e a #3 (headers atrás do gateway) continuam como estavam; só a #1 é mãe das novas. A #9 (Ingress `order.ganjj.local`) foi fechada como **not planned** em 23/10 pelo Rodrigo: decisão do grupo de manter o gateway como única entrada externa do Order, sem Ingress próprio, e `/metrics` só dentro do cluster (ADR 0003 do gateway).
 
 ### Decisões do grupo (sem dono único)
 
