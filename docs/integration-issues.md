@@ -1,7 +1,7 @@
 # Pendências de integração entre os microsserviços GANJJ
 
 Status: Em acompanhamento
-Última atualização: 2026-10-18
+Última atualização: 2026-10-24
 Idioma: Português (PT-BR)
 
 ## 1. Objetivo
@@ -19,21 +19,23 @@ coisa. IDs `PROMO-*` são específicos deste serviço.
 | ID | Tema | Serviços afetados | Situação | Bloqueia agora? |
 | --- | --- | --- | --- | --- |
 | INT-001 | Contrato de JWT (RS256 vs HS256) | Authorization, Order, Cart, Promotion | Resolvido — Order e Cart migraram pra RS256 | Não — falta só validar ponta a ponta com token real |
-| INT-002 | Cotação final do carrinho | Cart, Product, Promotion e Order | Confirmado quebrado (21/10): cart chama rotas que o Product não expõe e o Product não tem preço nem estoque | Sim, para integração final |
-| INT-006 | Autenticação interna | Cart, Order e Promotion | Pendente | Não |
+| INT-002 | Cotação final do carrinho | Cart, Product, Promotion e Order | Cart chama `calculate` desde 23/10 (`82dbbfb`, `2bf1dfa`). Falta o Product expor preço e estoque (product#9): sem isso adicionar item devolve 502. O consumo do cupom segue sem chamador (Order) | Sim, para integração final |
+| INT-006 | Autenticação interna | Cart, Order e Promotion | Parcial — Cart envia `x-internal-secret` ao Promotion (23/10); Order ainda não chama; valor idêntico não conferido em execução | Não |
 | PROMO-001 | Consumo de `pedido.confirmado` via RabbitMQ | Order e Promotion | Decidido em 21/10: REST interno agora, fila pendente do aceite do Order | Não |
-| INT-009 | Porta errada do Product nos consumidores | Order, Cart, Product | Confirmado em Compose e Minikube (21/10): Service `product-api`, consumidores chamam `product` | Sim — Order↔Product e Cart↔Product não conectam sem sobrescrever a env var |
-| INT-010 | `shopping-cart` sem `.env.example` no repo | Cart | Confirmado (repo) | Não bloqueia outros serviços, mas quebra o setup de quem clona `shopping-cart` do zero |
+| INT-009 | Porta errada do Product nos consumidores | Order, Cart, Product | Cart resolvido em 23/10 (`2017c3b`, aponta para `product-api:8000`). Order segue com `product` no manifest e `:3002` no `.env.example` (order#11); Product confirma a porta (product#8) | Sim — Order↔Product não conecta sem sobrescrever a env var |
+| INT-010 | `shopping-cart` sem `.env.example` no repo | Cart | Resolvido (23/10, `d09fa67`) | Não |
 | PROMO-003 | Ingress expunha `/internal` | Promotion | Resolvido (18/10) — allowlist `/api` + `/docs` | Não |
-| PROMO-004 | Observabilidade (`/metrics`, Prometheus, Grafana) | Todos | Promotion pronto; demais pendentes | Sim, para R2 da N2 |
+| PROMO-004 | Observabilidade (`/metrics`, Prometheus, Grafana) | Todos | Promotion, API Gateway e Cart expõem `/metrics`; demais pendentes | Sim, para R2 da N2 |
 | PROMO-005 | Helm (aula 27/10) | Todos | Pendente | Sim, para R2 da N2 |
 | PROMO-002 | Validar JWT RS256 ponta a ponta | Authorization, Order, Cart, Promotion | Executado em 21/10 com a chave de lab (todos os itens, Promotion incluído); falta repetir com a chave oficial do Eduardo | Não — mas fecha de vez o risco de INT-001 |
 | INT-011 | `POST /api/pedidos` devolve 500 (validação de record no .NET 10) | Order | Confirmado em Compose e Minikube (21/10) | Sim — nenhum pedido é criado |
-| INT-012 | `POST /products` leva ~15 s e o gateway corta em 10 s | Product, Gateway | Confirmado (21/10) | Não, mas duplica SKU em retry |
-| INT-013 | `product_id` inteiro no promotion, id string no Product | Promotion, Product | Confirmado (21/10) | Sim para a cotação |
+| INT-012 | `POST /products` leva ~15 s e o gateway corta em 10 s | Product, Gateway | Gateway ajustado em 21/10 (timeout de 30 s só nessa rota). O Product continua lento (product#10) | Não, mas duplica SKU em retry |
+| INT-013 | `product_id` inteiro no promotion, id string no Product | Promotion, Product | Resolvido no Promotion em 21/10 (`fe1328c`): aceita string, inteiro continua aceito. O Cart já envia string | Não |
 | INT-014 | llm-provider, embedding-reranking e vector-db públicos pelo Ingress | IA | Confirmado no Minikube (21/10) | Não, falha de segurança |
 
 Teste de ponta a ponta de 21/10: [teste-integracao-2026-10.md](teste-integracao-2026-10.md).
+
+Desde 23/10 os bloqueios entre repos estão registrados como dependência formal do GitHub (`blocked by`, 17 vínculos). Exemplo: promotion#52 depende de shopping-cart#11, order#13 e order#10. O cartão mostra o bloqueio, mas o GitHub não impede fechar a issue.
 
 ## 3. Prontidão N1/N2 por serviço
 
@@ -49,14 +51,15 @@ N1.
 | --- | --- | --- | --- | --- |
 | authorization | ✅ | ✅ | é o emissor | — |
 | client | ✅ | ✅ | ✅ valida | — |
-| order | ✅ (16/09) | ⚠️ | ✅ valida | tem `compose.yaml`, não `docker-compose.yml`; K8s só local (Minikube, [ADR 0007](../../order/docs/adr/0007-local-kubernetes-deployment.md)) — Deployment 3 réplicas + StatefulSet SQL Server, sem Ingress, exposto via `kubectl port-forward` |
+| order | ✅ (16/09) | ⚠️ | ✅ valida | tem `compose.yaml`, não `docker-compose.yml`; K8s só local (Minikube, [ADR 0007](../../order/docs/adr/0007-local-kubernetes-deployment.md)) — Deployment 3 réplicas + StatefulSet SQL Server, sem Ingress por decisão do grupo (23/10, order#9 fechada como not planned: o Order só é alcançável pelo gateway), exposto via `kubectl port-forward` para teste local |
 | product | ✅ (28/09) | ✅ | ✅ valida | inclui `llm-provider`, `embedding-reranking` e `vector-db` — nenhum dos três é chamado fora de `product` (coupling rule, `product/README.md`), então não entram como linhas próprias; os 4 pegaram K8s + Ingress + JWT RS256 (HTTPBearer contra a chave pública do `authorization`) juntos em 28/09, `product` publica `:8000` (confirmado, bate com INT-009) |
 | promotion | ✅ | ✅ | ✅ | falta só o teste ponta a ponta — ver PROMO-002 |
-| shopping-cart | ✅ (08/09) | ✅ | ✅ valida | — |
+| shopping-cart | ✅ (08/09) | ✅ | ✅ valida | desde 23/10: CI verde, `/metrics`, imagem `jcliz/shopping-cart:1.1.0` multi-arch, Ingress só com `/api/cart`, `/docs`, `/openapi.json` e `/health`; sem Helm |
 
-Observabilidade (Prometheus/métricas): só o `promotion` expõe `/metrics` (18/10). Os outros 8 repos não têm.
-O Plano de Ensino (aula 11, 03/11) cobra Prometheus e Grafana na N2, e Helm (aula 10, 27/10): ambos entram no
-R2 (3,0). Também sem Helm em nenhum repo.
+Observabilidade (Prometheus/métricas): expõem `/metrics` o `promotion` (18/10), o `api-gateway` (porta 9100) e o
+`shopping-cart` (23/10, `37f8945`). Os outros 7 repos não têm. O Plano de Ensino (aula 11, 03/11) cobra Prometheus
+e Grafana na N2, e Helm (aula 10, 27/10): ambos entram no R2 (3,0). Só o `promotion` tem chart Helm (instalado no
+Minikube em 21/10); nenhum outro repo tem.
 
 ## 4. Pendências detalhadas
 
@@ -90,8 +93,8 @@ validação ponta a ponta.
 ### PROMO-002 — Validar JWT RS256 ponta a ponta com token real do authorization
 
 **Situação atual:** o código dos dois lados (`order`, `shopping-cart`) já foi corrigido — ver
-INT-001 acima. O teste multi-serviço de 26/08 é anterior a essas correções e nunca foi
-re-executado depois delas.
+INT-001 acima. O teste multi-serviço de 26/08 era anterior a essas correções; o do `promotion`
+foi refeito em 21/10 (execução abaixo).
 
 **Checklist do teste:**
 
@@ -114,7 +117,7 @@ re-executado depois delas.
 Resultados em `GET /api/campaigns`: admin 200; sem token 401; role CLIENTE 403; refresh token como bearer 401; token expirado 401; `iss` errado 401; assinatura adulterada ou de outra chave 401; formato inválido 401; `JWT_PUBLIC_KEY` vazia 500.
 
 **Nota:** nenhuma env var nova além de `JWT_PUBLIC_KEY`, nenhuma dependência nova (`firebase/php-jwt`
-já instalado) — não é um bloqueio de escopo, só falta executar.
+já instalado) — não é um bloqueio de escopo, só falta repetir com a chave oficial.
 
 **Responsáveis:** Lucas Stopinski (Promotion) executa o teste; Rodrigo Alves (Order) e João Liz
 (Cart) só precisam ser avisados do resultado, já que o código do lado deles não muda.
@@ -123,13 +126,27 @@ já instalado) — não é um bloqueio de escopo, só falta executar.
 
 **Situação atual, do lado de `promotion`:** `POST /internal/discounts/calculate` e
 `POST /internal/coupons/{code}/consume` existem, estão testados (`DiscountInternalTest.php`,
-`CouponTest.php`) e seguem o contrato documentado em `docs/contrato-api.md`. Nenhum dos dois é
-chamado por nenhum outro serviço hoje — nem `shopping-cart` nem `order` fazem essa chamada.
+`CouponTest.php`) e seguem o contrato documentado em `docs/contrato-api.md`.
+
+**Atualização 2026-10-24, lendo o `main` do `shopping-cart`:** o Cart passou a chamar
+`POST /internal/discounts/calculate` em `GET /api/cart` (commit `82dbbfb`, 23/10; cart#10 fechada).
+Manda `x-internal-secret`, `items[{product_id (string), unit_price, quantity}]` e `coupon` (`null` ou o
+`?coupon=` da consulta). Lê `subtotal`, `promotions_discount`, `coupon_discount`, `total` e, por item,
+`discount_percentage` e `discounted_price`, todos presentes no contrato. Se o Promotion falhar, o
+carrinho volta sem desconto com `discounts_applied: false`, em vez de derrubar a leitura. O Service
+`promotion:8000` configurado no manifest do Cart bate com o nosso. O Cart não chama `consume`.
+
+**Ainda não rodei Cart → Promotion em execução:** o contrato foi conferido lendo o código. O preço
+do item vem do Product, que ainda não expõe `price` nem `stock` (product#9); até lá o Cart devolve 502
+"Product has no price" ao adicionar item (cart#11).
+
+**Consumo do cupom:** `POST /internal/coupons/{code}/consume` continua sem chamador. `order` ainda
+não faz essa chamada (promotion#50 e #52).
 
 **Recomendação, alinhada com `order/docs/adr/0002-cart-authoritative-checkout-quote.md`:** Cart
 deve compor Product + Promotion numa cotação de checkout, e Order só consumir essa cotação
 pronta. `order` já decidiu formalmente (ADR 0002) que nunca vai chamar `promotion` diretamente —
-então a integração real só acontece quando `shopping-cart` implementar essa composição.
+a parte do Cart dessa composição está entregue; falta o Product fornecer o preço.
 
 **Responsáveis:** João Liz (Cart), João Correa (Product), Lucas Stopinski (Promotion) e Rodrigo
 Alves (Order) — mesmos nomes já citados em `order/docs/INTEGRATION-ISSUES.md`.
@@ -145,6 +162,11 @@ subir configurado de forma insegura).
 segredo configurado aqui. Sem isso, não há garantia de que as chamadas internas entre os três
 serviços estão de fato autenticadas — cada lado pode estar validando contra um segredo
 diferente sem que ninguém perceba até testar de ponta a ponta.
+
+**Atualização 2026-10-24:** o Cart já envia `x-internal-secret` com o `INTERNAL_SECRET` do próprio
+ambiente (`http/promotionClient.js`) e o `k8s/create-secret.sh` dele avisa que o valor precisa ser o
+mesmo do Promotion. Falta conferir em execução que os dois valores batem e o Order, que ainda não
+chama o Promotion.
 
 **Responsável:** todo o grupo.
 
@@ -197,6 +219,11 @@ reconfirmar com o João Correa se `product` vai continuar publicando `8000` sozi
 passa a depender de um compose no nível da organização (o README já fala em "orquestrado a
 partir da raiz do repo, junto com os outros serviços" — esse arquivo raiz ainda não existe).
 
+**Atualização 2026-10-24:** o Cart corrigiu em 23/10 (`2017c3b`): `k8s/shopping-cart.yaml` aponta para
+`http://product-api:8000` e o `.env.example` voltou com `http://localhost:8000` (cart#9 fechada). O
+Order continua com `Services__Product__BaseUrl=http://product:8000` em `k8s/order.yaml` e `:3002` no
+`.env.example` (order#11 aberta); a confirmação de `product-api:8000` pelo Product é a product#8.
+
 ### INT-010 — `shopping-cart` sem `.env.example` versionado
 
 **Situação atual, confirmada lendo o repo (2026-08-27):** `shopping-cart/.gitignore` tem o
@@ -213,6 +240,10 @@ serve de referência enquanto o arquivo não volta.
 
 **Recomendação:** João Liz recria o `.env.example` a partir da tabela do próprio README (ele já
 documenta os 7 valores necessários) e comita.
+
+**Resolvido em 2026-10-23:** `d09fa67` restaurou o `.env.example`, só com valores de exemplo
+(`PORT`, `REDIS_*`, `CART_TTL_SECONDS`, `PRODUCT_SERVICE_URL`, `PROMOTION_SERVICE_URL`,
+`INTERNAL_SECRET`), e o passo `cp .env.example .env` do README volta a funcionar (cart#8 fechada).
 
 **Responsável:** João Liz (Cart).
 
@@ -247,35 +278,40 @@ serviço.
 
 - [x] Avisar Rodrigo e João Liz sobre o contrato de JWT quebrado em `order` e `shopping-cart`
       (INT-001) — os dois já migraram pra RS256, falta só validar ponta a ponta.
-- [ ] Rodar o teste ponta a ponta do JWT RS256 com token real do authorization (PROMO-002).
+- [x] Rodar o teste ponta a ponta do JWT RS256 com token real do authorization (PROMO-002) — 21/10,
+      com a chave de lab.
+- [ ] Repetir o PROMO-002 com a chave pública e o usuário oficiais do Eduardo (authorization#8,
+      promotion#49).
 - [x] Corrigir o Ingress do promotion pra excluir /internal do acesso externo (PROMO-003) — 18/10.
 - [ ] Confirmar quem chama `/internal/discounts/calculate` e `/internal/coupons/{code}/consume`
-      (INT-002).
+      (INT-002) — `calculate`: o Cart, desde 23/10 (ainda não rodado em execução); `consume`: ninguém.
 - [ ] Confirmar que `INTERNAL_SECRET` é idêntico em `order`, `shopping-cart` e `promotion`
       (INT-006).
 - [ ] Fechar contrato da mensageria `pedido.confirmado` com Order (PROMO-001).
 - [ ] Implementar idempotência do consumidor de `pedido.confirmado` (PROMO-001).
-- [ ] Avisar João Correa, Rodrigo e João Liz sobre a porta errada do Product em
-      `PRODUCT_SERVICE_URL` (INT-009).
+- [x] Avisar João Correa, Rodrigo e João Liz sobre a porta errada do Product em
+      `PRODUCT_SERVICE_URL` (INT-009) — issues abertas em 20/10 (product#8, order#11, shopping-cart#9).
 - [ ] Confirmar com João Correa se `product` mantém a porta `8000` sozinho ou passa a depender
       de um compose raiz da organização, já que o `docker-compose.yml` do repo sumiu (INT-009).
-- [ ] Avisar João Liz que o `.env.example` do `shopping-cart` sumiu do repo (INT-010).
+- [x] Avisar João Liz que o `.env.example` do `shopping-cart` sumiu do repo (INT-010) — resolvido em
+      23/10 (`d09fa67`).
 
 ## 6. Revisão cruzada para a N2 (2026-10-18)
 
 Levantamento feito lendo os 9 repos contra a rubrica do Plano de Ensino (N2 em 10/11/2026: R1 K8s 4,0, R2
 segurança/distribuição/observabilidade 3,0, R3 apresentação 3,0). Cada linha vira uma issue no repo do dono; aqui
-fica o mapa.
+fica o mapa. As linhas de `order`, `shopping-cart` e API Gateway foram atualizadas em 24/10; o mapa
+completo e atual de issues está em [issues-entrega-final.md](issues-entrega-final.md).
 
 | Repo | Dono | Gaps |
 | --- | --- | --- |
-| `order` | Rodrigo | sem Ingress (acesso por `port-forward`); imagem `ganjj-order:local` não publicada; sem `/metrics`; contrato `pedido.confirmado` (PROMO-001); porta do Product (INT-009) |
-| `shopping-cart` | João Liz | sem CI; `.env.example` ausente (INT-010); sem `/metrics`; porta do Product (INT-009); cotação com Promotion (INT-002) |
+| `order` | Rodrigo | sem Ingress por decisão do grupo (order#9 fechada como not planned em 23/10); imagem `ganjj-order:local` não publicada; sem `/metrics`; contrato `pedido.confirmado` (PROMO-001); porta do Product (INT-009) |
+| `shopping-cart` | João Liz | entregues no `main` em 23/10: CI, `.env.example`, `/metrics`, porta do Product, imagem multi-arch e chamada ao Promotion (INT-002). Faltam Helm (cart#5), dashboard (cart#6, parcial) e o preço vindo do Product (cart#11) |
 | `authorization` | Eduardo | sem CI; sem `/metrics`; confirmar `GET /auth/public-key` para o teste do PROMO-002 |
 | `client` | Eduardo | sem CI; sem `/metrics` |
 | `product` | João Correa | sem `/metrics`; confirmar porta 8000 (INT-009) |
 | `llm-provider`, `embedding-reranking`, `vector-db` | João Correa | Ingress público apesar de só o `product` chamá-los; sem `/metrics` |
-| API Gateway | Lucas | repo [`api-gateway`](https://github.com/Back-End-Cloud-Computing/api-gateway) criado em 19/10/2026 com docs, issues e scaffold; falta implementar (fase 1 até 24/10) |
+| API Gateway | Lucas | repo [`api-gateway`](https://github.com/Back-End-Cloud-Computing/api-gateway) criado em 19/10/2026; implementado, com imagem `bascratki/api-gateway:1.0.0` (amd64 e arm64), testado no Minikube e com token real em 21/10. Faltam Helm, Prometheus e Grafana no cluster e o dashboard da solução |
 | Serviço de suporte (e-mail/SMS/WhatsApp) | Eduardo | repo [`support`](https://github.com/Back-End-Cloud-Computing/support) criado em 19/10/2026 com docs, issues e scaffold provisório em Go; Eduardo confirma a stack; o `order` precisa chamá-lo (issue aberta no `order`) |
 
 Fora do código do `promotion`: nenhum serviço tem Helm ou Prometheus/Grafana. Padrão do grupo a combinar.
