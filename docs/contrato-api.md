@@ -221,9 +221,60 @@ um uso e um cupom de 500 usos se esgotaria sem nenhuma venda.
 O incremento é atômico (`UPDATE ... WHERE usage_count < usage_limit`), então duas compras simultâneas no
 último uso disponível não passam as duas.
 
-O endpoint **não é idempotente**: não recebe `pedido_id`, então repetir a chamada consome de novo. O Pedido não
-deve repetir em timeout. Idempotência por `pedido_id` virá com o consumidor RabbitMQ, quando o contrato do evento
-for aceito pelo Order (decisão em [fase 4](fases/fase-4-integracao.md#decisão-de-21102026-rest-interno-agora-fila-pendente-do-order)).
+O endpoint **não é idempotente**: não recebe `order_id`, então repetir a chamada consome de novo. O Pedido não
+deve repetir em timeout. O contrato RabbitMQ aceito resolve isso com idempotência por `order_id`; veja a
+[fase 4](fases/fase-4-integracao.md#decisão-atualizada-em-25102026-contrato-da-fila-aceito).
+
+## Mensageria — `OrderConfirmed`
+
+Status: contrato aceito em Order e Promotion; publisher e consumidor continuam
+como implementações separadas.
+
+| Elemento | Valor |
+|---|---|
+| Exchange | `ganjj.orders` |
+| Tipo da exchange | `direct`, durável |
+| Routing key | `order.confirmed` |
+| Fila do Promotion | `promotion.order-confirmed`, durável |
+| Binding | `promotion.order-confirmed` -> `ganjj.orders` com `order.confirmed` |
+| Entrega | mensagem persistente, publisher confirm, ack manual no consumidor |
+| Content type | `application/json` |
+
+Payload versão 1:
+
+```json
+{
+  "schema_version": 1,
+  "event_id": "e82a1f56-f69f-4dc4-9f10-3a05b3e90fac",
+  "event_type": "OrderConfirmed",
+  "occurred_at": "2026-10-25T12:00:00Z",
+  "order_id": "adc8aacb-51a2-40d1-a8c0-e7ef5464f8aa",
+  "coupon_code": "INVERNO20",
+  "items": [
+    { "product_id": "6ad83139dbb96e49bc0aef29", "quantity": 2 }
+  ],
+  "correlation_id": "6a2f41a5-c3f9-4d0f-a8cb-0a6e8a8e1a11"
+}
+```
+
+Regras:
+
+- `schema_version` é exatamente `1`; mudança incompatível exige nova versão.
+- `event_id` é UUID estável e também vai na propriedade AMQP `message_id`.
+- `order_id` é UUID e a chave de idempotência no Promotion.
+- `coupon_code` é string maiúscula ou `null`. Cupom nulo é no-op válido e recebe ack.
+- `product_id` é string; `quantity` é inteiro positivo.
+- `correlation_id` é opcional no JSON e também vai na propriedade AMQP quando existir.
+- O Order grava o evento em outbox na mesma transação SQL do pedido e publica com confirm.
+- O Promotion grava `order_id` único na mesma transação MySQL que incrementa o uso.
+  Duplicata recebe ack sem novo incremento.
+- O consumidor só confirma depois do commit. Falha transitória recebe nack para
+  reentrega; versão/payload inválido é rejeitado e precisa ficar visível sem loop infinito.
+- Não entram identidade, e-mail, endereço, preço ou outros dados pessoais.
+
+Dependência: o Order atual ainda não recebe nem persiste o cupom da cotação do
+Cart. O publisher permanece desabilitado até existir `coupon_code` autoritativo;
+o Order não aceitará cupom no corpo público como atalho.
 
 ### `GET /metrics`
 
