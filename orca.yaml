@@ -1,0 +1,7 @@
+scripts:
+  setup: |
+    # .env é gitignored: copia do checkout principal, ou parte do exemplo
+    composer install
+    if [ ! -e .env ]; then
+      if [ -f "$ORCA_ROOT_PATH/.env" ]; then cp "$ORCA_ROOT_PATH/.env" .env; else cp .env.example .env && php artisan key:generate; fi
+    fi
