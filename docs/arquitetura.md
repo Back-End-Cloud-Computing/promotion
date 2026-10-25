@@ -58,7 +58,7 @@ Os dois últimos são repos novos na organização, definidos em 19/10/2026:
 | Peça | Dono | Repo | Stack | Decisões que tocam o `promotion` |
 |---|---|---|---|---|
 | API Gateway | Lucas | [`api-gateway`](https://github.com/Back-End-Cloud-Computing/api-gateway) | Node/TypeScript + Fastify | `api.ganjj.local` roteia `/api/sale` e `/api/coupons/{code}/validate` (públicas) e `/api/promotions`, `/api/coupons`, `/api/campaigns` (token) para `promotion:8000`; `/internal/*` e `/metrics` nunca atravessam; o `promotion` segue validando o JWT; o Ingress atual do `promotion` fica como está |
-| Suporte (e-mail, SMS, WhatsApp) | Eduardo | [`support`](https://github.com/Back-End-Cloud-Computing/support) | Go (provisório) + SQLite | Chamado pelo `order` por HTTP interno agora, RabbitMQ depois; o `promotion` não fala com ele |
+| Suporte (e-mail, SMS, WhatsApp) | Eduardo | [`support`](https://github.com/Back-End-Cloud-Computing/support) | Java 21 + Spring Boot + SQLite ([ADR 0006](https://github.com/Back-End-Cloud-Computing/support/blob/main/docs/adr/0006-java-spring-boot.md), 24/10) | Chamado pelo `order` por HTTP interno agora, RabbitMQ depois; o `promotion` não fala com ele |
 
 O laboratório mínimo da Aula 02 pede: recurso principal com camadas **Domain/Service/Controller**, CRUD
 completo (GET/POST/PUT/DELETE) e código versionado.
