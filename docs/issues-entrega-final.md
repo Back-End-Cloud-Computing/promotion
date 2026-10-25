@@ -27,7 +27,7 @@ Fonte: manifests em `k8s/` de cada `main`, `gh run list` e a API do Docker Hub.
 
 | Repo (dono) | CI na main | `/metrics` | Imagem publicada | Helm | Grafana JSON | Observação |
 |---|---|---|---|---|---|---|
-| `promotion` (Lucas) | verde | sim (negócio e HTTP) | `bascratki/promotion:1.0.0`, amd64 e arm64 | chart instalado no Minikube em 21/10 (1 réplica) | falta | Ingress só com `/api` e `/docs` |
+| `promotion` (Lucas) | verde | sim (negócio e HTTP) | `bascratki/promotion:1.1.0`, amd64 e arm64 | chart instalado no Minikube em 21/10 (1 réplica) | falta | Ingress só com `/api` e `/docs` |
 | `api-gateway` (Lucas) | verde | sim (porta 9100) | `bascratki/api-gateway:1.0.0`, amd64 e arm64 (21/10) | falta | falta | testado no Minikube e com token real em 21/10 |
 | `support` (Eduardo) | verde | sim (25/10) | `eduardofabri/support:1.0.2`, amd64 e arm64 | chart (25/10) | JSON (25/10) | implementação em Java mergeada (PR #19); manifest ainda aponta `1.0.1`; consumidor RabbitMQ planejado (#11) |
 | `order` (Rodrigo) | verde | sim (25/10) | `ghcr.io/back-end-cloud-computing/order:latest` multi-arch (25/10) | `helm/order` (25/10) | JSON (25/10) | sem Ingress por decisão do grupo (order#9); `product-api:8000` (order#11); `POST /api/pedidos` corrigido (order#13); publisher RabbitMQ desligado até o Cart enviar o cupom |
