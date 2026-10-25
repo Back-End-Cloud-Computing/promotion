@@ -36,40 +36,39 @@ O que precisa ser combinado:
 - Que o cálculo **não** consome uso e o fechamento **sim** — se o Carrinho chamar `consumir`, um cupom de 500
   usos se esgota sem nenhuma venda.
 
-### Decisão de 21/10/2026: REST interno agora, fila pendente do Order
+### Decisão atualizada em 25/10/2026: contrato da fila aceito
 
-O consumo do cupom no fechamento do pedido fica no **REST interno** (`POST /internal/coupons/{code}/consume`,
-já em produção no serviço e coberto por teste). O consumidor RabbitMQ **não será implementado antes** de o
-Order aceitar um contrato de evento.
+O REST interno (`POST /internal/coupons/{code}/consume`) continua disponível,
+mas Order e Promotion aceitaram o contrato RabbitMQ de `OrderConfirmed`. A fila é
+o alvo do fechamento integrado porque permite reentrega e idempotência.
 
 Por quê:
 
-- **A rubrica aceita REST "e/ou" fila.** O REST interno já satisfaz o critério sozinho (ver acima); a fila é
-  reforço, não requisito.
-- **O contrato não é nosso.** Exchange, fila, routing key e payload dependem do Order (Rodrigo), que ainda
-  não confirmou nada. Inventar o contrato do lado do consumidor obriga o Order a se adaptar ou gera
-  retrabalho nos dois lados.
-- **Custo e risco.** Consumidor novo traz dependência (`php-amqplib`), Deployment separado, broker no cluster
-  e teste de reentrega. É a parte da fase que mais pode atrasar a entrega de 10/11.
-- **O REST já está integrado ao resto.** A cotação e o consumo usam o mesmo `INTERNAL_SECRET` e o mesmo
-  caminho do Carrinho e do Pedido (INT-002 e INT-006).
+- **A rubrica aceita REST "e/ou" fila.** O REST já garante o mínimo; RabbitMQ é
+  uma decisão do grupo para demonstrar resiliência distribuída.
+- **Contrato único.** Os dois repositórios registram os mesmos nomes, payload,
+  ack e regra de idempotência.
+- **Responsabilidades separadas.** Order publica por outbox; Promotion mantém a
+  fila, consome e deduplica por `order_id`.
 
-Limite conhecido do REST: o `consume` **não recebe `pedido_id`**, então um retry do Pedido depois de um
-timeout consome o cupom duas vezes. Mitigação até a fila existir: o Order não repete a chamada de consumo
-em timeout. A idempotência por `pedido_id` entra junto do consumidor, quando o contrato for fechado.
+Limite conhecido do REST: o `consume` não recebe `order_id`, então um retry pode
+consumir o cupom duas vezes. O consumidor RabbitMQ resolve isso com uma restrição
+única sobre `order_id` na mesma transação que incrementa o uso.
 
-Sai do pendente quando o Rodrigo aceitar o contrato abaixo; a issue [#50](https://github.com/Back-End-Cloud-Computing/promotion/issues/50) segue aberta e
-[#51](https://github.com/Back-End-Cloud-Computing/promotion/issues/51) (consumidor) depende dela.
+O contrato está fechado na issue [#50](https://github.com/Back-End-Cloud-Computing/promotion/issues/50).
+A [#51](https://github.com/Back-End-Cloud-Computing/promotion/issues/51)
+implementa o consumidor. O publisher do Order ainda depende de o Cart fornecer
+`coupon_code` numa cotação autoritativa.
 
-**Proposta de contrato para o Rodrigo aceitar ou corrigir:** exchange `pedidos` (direct), routing key
-`pedido.confirmado`, fila durável `promocao.pedido-confirmado`, payload JSON
-`{"pedido_id": "<guid>", "cupom_codigo": "INVERNO20|null", "itens": [{"product_id": "<string>", "quantidade": 1}]}`,
-idempotência por `pedido_id`.
+**Contrato aceito:** exchange direct durável `ganjj.orders`, routing key
+`order.confirmed`, fila durável `promotion.order-confirmed` e payload versão 1
+documentado em [`contrato-api.md`](../contrato-api.md#mensageria--orderconfirmed).
+Entrega é pelo menos uma vez; a idempotência é por `order_id`.
 
-### 2. Consumidor RabbitMQ (pendente do contrato com o Order)
+### 2. Consumidor RabbitMQ (contrato aceito; implementação pendente)
 
-**O evento:** o serviço de Pedido publica `pedido.confirmado` com `{pedido_id, cupom_codigo, itens}`. Este
-serviço consome e incrementa `usos` do cupom.
+**O evento:** Order publica `OrderConfirmed` em `ganjj.orders` com routing key
+`order.confirmed`. Este serviço consome `coupon_code` e incrementa `usage_count`.
 
 Isso substitui a chamada HTTP síncrona de `consumir` no caminho crítico do checkout — que é exatamente o
 problema que mensageria resolve: se o serviço de Promoção estiver fora do ar, o pedido ainda é fechado e o
@@ -83,12 +82,12 @@ php artisan make:command ConsumirPedidosConfirmados
 O consumidor roda como processo separado (`php artisan promocao:consumir-pedidos`), em outro Deployment no
 Kubernetes — **nunca dentro do request HTTP**.
 
-**O que combinar com o Rodrigo:** nome da exchange, nome da fila, routing key e o formato exato do payload.
-É o único contrato compartilhado além do OpenAPI.
+Os nomes, o payload e as propriedades AMQP estão congelados em
+[`contrato-api.md`](../contrato-api.md#mensageria--orderconfirmed).
 
-**Idempotência:** a mesma mensagem pode ser entregue duas vezes (é garantia at-least-once, não exactly-once).
-Consumir duas vezes o mesmo `pedido_id` não pode incrementar `usos` duas vezes. Guardar o `pedido_id`
-processado, ou tornar o incremento condicional a ele.
+**Idempotência:** a mesma mensagem pode ser entregue duas vezes (garantia
+at-least-once). O consumidor grava `order_id` único na mesma transação MySQL do
+incremento. Duplicata recebe ack sem alterar `usage_count`.
 
 > Este é o bug clássico de mensageria e não aparece em teste feliz — aparece quando a rede oscila e o broker
 > reentrega.
@@ -106,7 +105,7 @@ serviços reais dos colegas, no cluster.
 | Cálculo pelo Carrinho | Requisição real do serviço do João Liz | Detalhamento correto |
 | Consumo pelo Pedido | Fechamento real do serviço do Rodrigo | `usos` incrementa em 1 |
 | Cupom no limite | Fechar pedido com cupom esgotado | 409, sem incrementar |
-| Evento consumido | Publicar `pedido.confirmado` manualmente no broker | `usos` incrementa |
+| Evento consumido | Publicar `OrderConfirmed` com routing key `order.confirmed` | `usage_count` incrementa |
 | Idempotência | Publicar **a mesma** mensagem duas vezes | `usos` incrementa **uma** vez |
 | Resiliência | Derrubar o consumidor, publicar, subir de novo | Mensagem processada ao voltar |
 
@@ -117,7 +116,7 @@ Os dois últimos são os que provam que a mensageria foi entendida, não só lig
 - [x] OpenAPI publicada e acessível (antecipada pra Fase 2)
 - [ ] Carrinho consome o cálculo com sucesso
 - [ ] Pedido consome e o uso incrementa
-- [ ] Consumidor RabbitMQ processa `pedido.confirmado`
+- [ ] Consumidor RabbitMQ processa `OrderConfirmed`
 - [ ] Reentrega da mesma mensagem não duplica o consumo
 - [ ] Consumidor roda como Deployment separado no cluster
 - [ ] Fluxo ponta a ponta demonstrado antes de 06/10

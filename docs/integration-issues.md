@@ -21,7 +21,7 @@ coisa. IDs `PROMO-*` são específicos deste serviço.
 | INT-001 | Contrato de JWT (RS256 vs HS256) | Authorization, Order, Cart, Promotion | Resolvido — Order e Cart migraram pra RS256 | Não — falta só validar ponta a ponta com token real |
 | INT-002 | Cotação final do carrinho | Cart, Product, Promotion e Order | Cart chama `calculate` desde 23/10 (`82dbbfb`, `2bf1dfa`). O Product expõe `price` e `stock` desde 24/10 (product#9 fechada, `fb7b26b`); falta rodar Cart → Product → Promotion em execução. O consumo do cupom segue sem chamador (Order) | Sim, para integração final |
 | INT-006 | Autenticação interna | Cart, Order e Promotion | Parcial — Cart envia `x-internal-secret` ao Promotion (23/10); Order ainda não chama; valor idêntico não conferido em execução | Não |
-| PROMO-001 | Consumo de `pedido.confirmado` via RabbitMQ | Order e Promotion | Decidido em 21/10: REST interno agora, fila pendente do aceite do Order | Não |
+| PROMO-001 | Consumo de `OrderConfirmed` via RabbitMQ | Order e Promotion | Contrato aceito em 25/10; implementação pendente | Sim para RabbitMQ |
 | INT-009 | Porta errada do Product nos consumidores | Order, Cart, Product | Cart resolvido em 23/10 (`2017c3b`, aponta para `product-api:8000`). Product confirmou a porta em 24/10 (product#8, `330bb05`). Order segue com `product` no manifest e `:3002` no `.env.example` (order#11) | Sim — Order↔Product não conecta sem sobrescrever a env var |
 | INT-010 | `shopping-cart` sem `.env.example` no repo | Cart | Resolvido (23/10, `d09fa67`) | Não |
 | PROMO-003 | Ingress expunha `/internal` | Promotion | Resolvido (18/10) — allowlist `/api` + `/docs` | Não |
@@ -173,24 +173,19 @@ chama o Promotion.
 
 **Responsável:** todo o grupo.
 
-### PROMO-001 — Consumo de `pedido.confirmado` via RabbitMQ
+### PROMO-001 — Consumo de `OrderConfirmed` via RabbitMQ
 
-**Decisão de 21/10/2026:** o consumo fica no REST interno (`/internal/coupons/{code}/consume`); o consumidor só
-entra quando o Order aceitar o contrato proposto em
-[`fase-4-integracao.md`](fases/fase-4-integracao.md#decisão-de-21102026-rest-interno-agora-fila-pendente-do-order).
+**Decisão atualizada em 25/10/2026:** Order e Promotion aceitaram o contrato
+documentado em `docs/contrato-api.md`: exchange direct durável `ganjj.orders`,
+routing key `order.confirmed` e fila durável `promotion.order-confirmed`.
 
-**Situação atual:** planejado em `docs/fases/fase-4-integracao.md`, não implementado. Sem
-`php-amqplib` no `composer.json`, sem consumidor.
+**Situação atual:** contrato concluído; código ainda não implementado. Continua
+sem `php-amqplib` no `composer.json` e sem consumidor. O publisher do Order
+depende de o Cart fornecer `coupon_code` autoritativo.
 
-**Decisão necessária com Order (Rodrigo):**
-
-- nome da exchange, fila e routing key;
-- formato exato do payload (`{pedido_id, cupom_codigo, itens}` é a hipótese registrada em
-  `fase-4-integracao.md`, ainda não confirmada com Order);
-- confirmar que `INTERNAL_SECRET` é o mesmo valor dos dois lados (ver INT-006).
-
-**Ainda não construído:** idempotência do consumidor — guardar `pedido_id` já processado, pra
-uma mensagem reentregue não consumir cupom duas vezes.
+**Ainda não construído:** publisher/outbox no Order e consumidor no Promotion.
+O consumidor deve gravar `order_id` único na mesma transação MySQL que incrementa
+`usage_count`; reentrega recebe ack sem segundo incremento.
 
 **Responsáveis:** Rodrigo Alves (Order) e Lucas Stopinski (Promotion).
 
@@ -290,8 +285,8 @@ serviço.
       (INT-002) — `calculate`: o Cart, desde 23/10 (ainda não rodado em execução); `consume`: ninguém.
 - [ ] Confirmar que `INTERNAL_SECRET` é idêntico em `order`, `shopping-cart` e `promotion`
       (INT-006).
-- [ ] Fechar contrato da mensageria `pedido.confirmado` com Order (PROMO-001).
-- [ ] Implementar idempotência do consumidor de `pedido.confirmado` (PROMO-001).
+- [x] Fechar contrato da mensageria `OrderConfirmed` com Order (PROMO-001).
+- [ ] Implementar idempotência do consumidor de `OrderConfirmed` (PROMO-001).
 - [x] Avisar João Correa, Rodrigo e João Liz sobre a porta errada do Product em
       `PRODUCT_SERVICE_URL` (INT-009) — issues abertas em 20/10 (product#8, order#11, shopping-cart#9).
 - [ ] Confirmar com João Correa se `product` mantém a porta `8000` sozinho ou passa a depender
@@ -308,7 +303,7 @@ completo e atual de issues está em [issues-entrega-final.md](issues-entrega-fin
 
 | Repo | Dono | Gaps |
 | --- | --- | --- |
-| `order` | Rodrigo | sem Ingress por decisão do grupo (order#9 fechada como not planned em 23/10); imagem `ganjj-order:local` não publicada; sem `/metrics`; contrato `pedido.confirmado` (PROMO-001); porta do Product (INT-009) |
+| `order` | Rodrigo | sem Ingress por decisão do grupo; contrato `OrderConfirmed` aceito, publisher/outbox pendente (PROMO-001); demais itens acompanhados nas issues do Order |
 | `shopping-cart` | João Liz | entregues no `main` em 23/10: CI, `.env.example`, `/metrics`, porta do Product, imagem multi-arch e chamada ao Promotion (INT-002). Faltam Helm (cart#5), dashboard (cart#6, parcial) e o preço vindo do Product (cart#11) |
 | `authorization` | Eduardo | sem CI; sem `/metrics`; confirmar `GET /auth/public-key` para o teste do PROMO-002 |
 | `client` | Eduardo | sem CI; sem `/metrics` |
