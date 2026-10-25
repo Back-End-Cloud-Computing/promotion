@@ -38,3 +38,40 @@ Correções aplicadas só no cluster de teste, sem tocar nos repos: imagens arm6
 ## Ainda não testado
 
 Pedido criado, cotação do cart no promotion e consumo do pedido no promotion não puderam rodar: dependem das correções de order, cart e product. Support, RabbitMQ e Prometheus/Grafana (aula 03/11) ficam para depois.
+
+## Rodada de 25/10/2026
+
+Minikube (Colima, arm64) com os 11 serviços a partir dos manifests dos repos no `main` de 25/10. Cadeia pelo gateway (`api.ganjj.local`, port-forward do Ingress). Evidência: `chain-k8s-4.txt` (26 PASS, 4 FAIL na execução; o passo 8 foi refeito à mão e passou, ver abaixo), `deg-k8s-1.txt`, `smoke-k8s-4.txt` (23 PASS, 0 FAIL), `metrics-k8s-1.txt`. Os arquivos ficam no laboratório local, fora dos repos.
+
+Ambiente: o promotion rodou com build local do `main` (`promotion:lab`), não com a imagem publicada; Order com `azure-sql-edge` e probes de laboratório (SQL Server 2022 não roda em arm64); Secrets de laboratório gerados no cluster.
+
+| Passo | Resultado | Observação |
+| --- | --- | --- |
+| Token RS256 real do `authorization` pelo gateway (admin e cliente) | rodado, PASS | |
+| `POST /products` com `price` e `stock` | rodado, PASS | 201 em menos de 10 s; SKU repetido: 409 (product#10) |
+| `GET /products/{id}` devolve `price` e `stock` | rodado, PASS | product#9 |
+| Promoção 20% e cupom 10% (admin) | rodado, PASS | `category` aceita só `Superiores`, `Inferiores`, `Inverno` |
+| `POST /api/cart/items` | rodado, PASS (201) | shopping-cart#11 funciona; pode fechar |
+| `GET /api/cart` com desconto | rodado, PASS | total 160 sem cupom, 144 com cupom de 10% (INT-002) |
+| Calculate direto com `product_id` string | rodado, PASS | 200 com segredo, 403 sem segredo e com segredo errado; desconto de 20% aplicado |
+| Estoque interno do Product | rodado, PASS | mesma `Idempotency-Key` duas vezes: estoque 7 e 7; sem segredo: 401 |
+| `/internal` e `/metrics` pelo gateway | rodado, PASS | 404 |
+| Sem token em `/clients /products /api/cart /api/pedidos /api/promotions` | rodado, PASS | 401 |
+| `/metrics` dos 11 serviços | rodado, PASS | promotion com 5 famílias (3 de negócio e 2 HTTP) na build local; a imagem 1.0.0 publicada só tem as 3 de negócio |
+| Degradação com o promotion em 0 pods | rodado, FAIL | `GET /api/cart` devolve 504; esperado 200 sem desconto |
+| `POST /api/pedidos` | rodado, FAIL | 502 `invalid_dependency_contract` |
+
+### Achados da rodada
+
+| Achado | Evidência | Dono |
+| --- | --- | --- |
+| Cart não degrada: o `fetch` de `http/promotionClient.js` não tem timeout, então a chamada pendura e o gateway corta (504). O `catch` de `buildSummary` já devolveria o carrinho sem desconto | `deg-k8s-1.txt`; pods do promotion em 0 | shopping-cart |
+| Order chama `GET /api/cesta` e o Cart expõe `/api/cart` | 502 `Cart returned invalid data: unexpected HTTP status 404` | order (Rodrigo) |
+| Order chama `/internal/produtos/{long id}/reserve-stock` e `restore-stock`; o Product expõe `/internal/products/{id}/stock/decrement` e `restore` com `Idempotency-Key` | leitura do código dos dois repos | order (Rodrigo) e product |
+| Imagem publicada `bascratki/promotion:1.0.0` está velha (19/10): sem `product_id` string (#58) e sem métricas HTTP (#48) | `POST /api/promotions` com id string e calculate deram 422 na 1.0.0 | promotion (publicar 1.1.0 multi-arch) |
+| Manifest do Order depende de SQL Server 2022, sem opção arm64 | pod do SQL em `CrashLoop` até trocar a imagem | order |
+| PR #69 aceitou o contrato `OrderConfirmed` no RabbitMQ; publisher e consumer ainda não existem | #51 vira trabalho obrigatório | promotion (#51) e order |
+
+### Não rodado
+
+Pedido criado (depende do Order alinhar as rotas), consumo do cupom por evento, Helm com `helm install` do grupo (aula de 27/10), Prometheus e Grafana (aula de 03/11), 11 serviços a partir das imagens publicadas (o promotion ainda depende da 1.1.0).

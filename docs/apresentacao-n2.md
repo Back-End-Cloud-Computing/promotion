@@ -35,7 +35,7 @@ sala toda. Este roteiro cobre a parte do `promotion`; a ordem final depende do g
 - Por que PHP/Laravel? Stack livre confirmada pelo professor; o foco é a arquitetura.
 - Por que não promphp? Três contadores não justificam a dependência; ver `fases/fase-5-seguranca.md`.
 - Os contadores zeram se o pod reinicia? Sim; o Prometheus trata reset de counter (`rate()`/`increase()`).
-- Quem chama o `promotion`? Pelo ADR do Order, o Cart compõe a cotação (INT-002). O Cart chama `calculate` desde 23/10; o Product expõe preço e estoque desde 24/10 (product#9, lido no código, não rodado); falta rodar o fluxo ponta a ponta e o consumo do cupom ainda não tem chamador.
+- Quem chama o `promotion`? Pelo ADR do Order, o Cart compõe a cotação (INT-002). O Cart chama `calculate` desde 23/10; o Product expõe preço e estoque desde 24/10 (product#9). Rodado em 25/10: cart com preço do Product e desconto do Promotion (160 e 144); o pedido no Order ainda falha por rotas diferentes do Cart e do Product (ver `teste-integracao-2026-10.md`). O consumo do cupom ainda não tem chamador.
 
 - Vocês testaram tudo junto? Sim, em 21/10: 11 repos no Compose e no Minikube, com achados e issues por dono (`teste-integracao-2026-10.md`).
 - Por que não tem fila? Ver a decisão acima; a proposta de contrato do evento está escrita e depende do aceite do Order.
@@ -46,5 +46,7 @@ sala toda. Este roteiro cobre a parte do `promotion`; a ordem final depende do g
 - [x] Chart Helm instalado no Minikube (21/10, 1 réplica, `/api/sale` 200 pelo Ingress).
 - [x] Imagem testada com `ImagePullPolicy` real no cluster (21/10, Minikube limpo, pull do Docker Hub).
 - [x] PROMO-002 executado com token real (21/10, chave de lab; repetir com a chave oficial do Eduardo).
+- [ ] Publicar `bascratki/promotion:1.1.0` multi-arch (a 1.0.0 não tem `product_id` string nem métricas HTTP).
+- [ ] Cart sem timeout no `fetch` do promotion: com o promotion fora, `GET /api/cart` dá 504 em vez de 200 sem desconto (dono: shopping-cart). Não demonstrar a degradação antes da correção.
 - [ ] Dashboard do Grafana exportado em JSON (promotion #47; já existem os de product, vector-db, embedding-reranking e shopping-cart).
 - [ ] Ensaio com o grupo; tempo por pessoa.
