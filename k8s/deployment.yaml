@@ -24,7 +24,7 @@ spec:
       # O retry cobre a corrida normal de startup contra o Deployment do MySQL.
       initContainers:
         - name: migrate
-          image: bascratki/promotion:1.0.0
+          image: bascratki/promotion:1.1.0
           imagePullPolicy: IfNotPresent
           command:
             - sh
@@ -37,7 +37,7 @@ spec:
                 name: promotion-secrets
       containers:
         - name: promotion
-          image: bascratki/promotion:1.0.0
+          image: bascratki/promotion:1.1.0
           imagePullPolicy: IfNotPresent
           # Sobrescreve o ENTRYPOINT da imagem (que roda migrate) — a migration já
           # rodou no initContainer acima.

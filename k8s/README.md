@@ -4,12 +4,12 @@ Ver [docs/fases/fase-3-kubernetes.md](../docs/fases/fase-3-kubernetes.md) para o
 
 ## 1. Imagem
 
-O Deployment usa a imagem publicada `bascratki/promotion:1.0.0` (Docker Hub), como os outros serviços do grupo.
+O Deployment usa a imagem publicada `bascratki/promotion:1.1.0` (Docker Hub), como os outros serviços do grupo.
 Para publicar uma versão nova (precisa de `docker login` com a conta `bascratki`):
 
 ```bash
-docker build -t bascratki/promotion:1.0.0 .
-docker push bascratki/promotion:1.0.0
+docker build -t bascratki/promotion:1.1.0 .
+docker push bascratki/promotion:1.1.0
 ```
 
 Para testar código local sem publicar, builde dentro do minikube com a mesma tag — o `IfNotPresent` usa a imagem
@@ -17,7 +17,7 @@ já carregada em vez de baixar:
 
 ```bash
 eval $(minikube docker-env)
-docker build -t bascratki/promotion:1.0.0 .
+docker build -t bascratki/promotion:1.1.0 .
 ```
 
 ## 2. Criar o Secret
@@ -28,7 +28,7 @@ encontrar em `promotion-secrets`: `APP_KEY`, `DB_PASSWORD`, `INTERNAL_SECRET`.
 
 ```bash
 kubectl create secret generic promotion-secrets \
-  --from-literal=APP_KEY="$(docker run --rm --entrypoint php bascratki/promotion:1.0.0 artisan key:generate --show)" \
+  --from-literal=APP_KEY="$(docker run --rm --entrypoint php bascratki/promotion:1.1.0 artisan key:generate --show)" \
   --from-literal=DB_PASSWORD=promotion \
   --from-literal=INTERNAL_SECRET=troque-por-um-segredo-de-verdade
 ```

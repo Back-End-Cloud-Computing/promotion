@@ -42,11 +42,10 @@ sala toda. Este roteiro cobre a parte do `promotion`; a ordem final depende do g
 
 ## Antes do dia
 
-- [x] Imagem publicada: `bascratki/promotion:1.0.0`, multi-arch (amd64 e arm64), em 19/10/2026.
+- [x] Imagem publicada: `bascratki/promotion:1.1.0`, multi-arch (amd64 e arm64), em 25/10/2026 (a 1.0.0, de 19/10, não tinha `product_id` string nem métricas HTTP).
 - [x] Chart Helm instalado no Minikube (21/10, 1 réplica, `/api/sale` 200 pelo Ingress).
 - [x] Imagem testada com `ImagePullPolicy` real no cluster (21/10, Minikube limpo, pull do Docker Hub).
 - [x] PROMO-002 executado com token real (21/10, chave de lab; repetir com a chave oficial do Eduardo).
-- [ ] Publicar `bascratki/promotion:1.1.0` multi-arch (a 1.0.0 não tem `product_id` string nem métricas HTTP).
 - [ ] Cart sem timeout no `fetch` do promotion: com o promotion fora, `GET /api/cart` dá 504 em vez de 200 sem desconto (dono: shopping-cart). Não demonstrar a degradação antes da correção.
 - [ ] Dashboard do Grafana exportado em JSON (promotion #47; já existem os de product, vector-db, embedding-reranking e shopping-cart).
 - [ ] Ensaio com o grupo; tempo por pessoa.

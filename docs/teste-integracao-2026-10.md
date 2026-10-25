@@ -75,3 +75,9 @@ Ambiente: o promotion rodou com build local do `main` (`promotion:lab`), não co
 ### Não rodado
 
 Pedido criado (depende do Order alinhar as rotas), consumo do cupom por evento, Helm com `helm install` do grupo (aula de 27/10), Prometheus e Grafana (aula de 03/11), 11 serviços a partir das imagens publicadas (o promotion ainda depende da 1.1.0).
+
+### Repetição com a imagem publicada (25/10)
+
+Com `bascratki/promotion:1.1.0` (multi-arch, pull real do Docker Hub) no lugar da build local, a cadeia deu 29 PASS e 1 FAIL (`chain-k8s-5.txt`): desconto 160 e 144, calculate com `product_id` string e métricas HTTP passaram. O único FAIL segue sendo o pedido (502, rotas do Order, order#18).
+
+A degradação com o promotion em 0 pods devolveu 200 sem desconto (`discounts_applied=false`) em 3 repetições (`deg-k8s-2.txt`, `deg-k8s-3.txt`), mas na primeira tentativa de 25/10 deu 504. Não é determinística: sem timeout no `fetch` do Cart, o resultado depende de como a conexão ao Service sem endpoints falha. A correção continua sendo shopping-cart#12 e a demonstração só é segura depois dela.
