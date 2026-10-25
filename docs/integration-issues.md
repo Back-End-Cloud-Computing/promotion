@@ -1,7 +1,7 @@
 # Pendências de integração entre os microsserviços GANJJ
 
 Status: Em acompanhamento
-Última atualização: 2026-10-24
+Última atualização: 2026-10-25
 Idioma: Português (PT-BR)
 
 ## 1. Objetivo
@@ -22,7 +22,7 @@ coisa. IDs `PROMO-*` são específicos deste serviço.
 | INT-002 | Cotação final do carrinho | Cart, Product, Promotion e Order | Cart chama `calculate` desde 23/10 (`82dbbfb`, `2bf1dfa`). O Product expõe `price` e `stock` desde 24/10 (product#9 fechada, `fb7b26b`); falta rodar Cart → Product → Promotion em execução. O consumo do cupom segue sem chamador (Order) | Sim, para integração final |
 | INT-006 | Autenticação interna | Cart, Order e Promotion | Parcial — Cart envia `x-internal-secret` ao Promotion (23/10); Order ainda não chama; valor idêntico não conferido em execução | Não |
 | PROMO-001 | Consumo de `OrderConfirmed` via RabbitMQ | Order e Promotion | Contrato aceito em 25/10; implementação pendente | Sim para RabbitMQ |
-| INT-009 | Porta errada do Product nos consumidores | Order, Cart, Product | Cart resolvido em 23/10 (`2017c3b`, aponta para `product-api:8000`). Product confirmou a porta em 24/10 (product#8, `330bb05`). Order segue com `product` no manifest e `:3002` no `.env.example` (order#11) | Sim — Order↔Product não conecta sem sobrescrever a env var |
+| INT-009 | Porta errada do Product nos consumidores | Order, Cart, Product | Cart resolvido em 23/10 (`2017c3b`, aponta para `product-api:8000`). Product confirmou a porta em 24/10 (product#8, `330bb05`). Order resolvido em 25/10 (order#11 fechada, `11a3e4f`) | Não — resolvido nos três; falta rodar |
 | INT-010 | `shopping-cart` sem `.env.example` no repo | Cart | Resolvido (23/10, `d09fa67`) | Não |
 | PROMO-003 | Ingress expunha `/internal` | Promotion | Resolvido (18/10) — allowlist `/api` + `/docs` | Não |
 | PROMO-004 | Observabilidade (`/metrics`, Prometheus, Grafana) | Todos | Promotion, API Gateway, Cart, Product, vector-db e embedding-reranking expõem `/metrics`; faltam Order, Authorization, Client, llm-provider e Support | Sim, para R2 da N2 |
@@ -57,9 +57,9 @@ N1.
 | shopping-cart | ✅ (08/09) | ✅ | ✅ valida | desde 23/10: CI verde, `/metrics`, imagem `jcliz/shopping-cart:1.1.0` multi-arch, Ingress só com `/api/cart`, `/docs`, `/openapi.json` e `/health`; sem Helm |
 
 Observabilidade (Prometheus/métricas): expõem `/metrics` o `promotion` (18/10), o `api-gateway` (porta 9100) e o
-`shopping-cart` (23/10, `37f8945`); em 24/10 entraram `product`, `vector-db` e `embedding-reranking` (commits diretos na `main`, issues #2 de cada um fechadas). Faltam `order`, `authorization`, `client`, `llm-provider` e `support`. O Plano de Ensino (aula 11, 03/11) cobra Prometheus
+`shopping-cart` (23/10, `37f8945`); em 24/10 entraram `product`, `vector-db` e `embedding-reranking` (commits diretos na `main`, issues #2 de cada um fechadas). Em 25/10 entraram `order`, `authorization`, `client`, `llm-provider` e `support`: os 9 repos que não são nossos expõem `/metrics`. O Plano de Ensino (aula 11, 03/11) cobra Prometheus
 e Grafana na N2, e Helm (aula 10, 27/10): ambos entram no R2 (3,0). Têm chart Helm o `promotion` (instalado no
-Minikube em 21/10) e, desde 24/10, `product`, `vector-db` e `embedding-reranking`, ainda não instalados por nós; os dashboards do Grafana em JSON existem nos mesmos três mais o `shopping-cart` e o `promotion` (#47 ainda por fazer).
+Minikube em 21/10) e, desde 24/10 e 25/10, todos os outros repos exceto o `shopping-cart` (cart#5) e o `api-gateway` (#11), ainda não instalados por nós; dashboards em JSON existem em todos os repos menos o `promotion` (#47) e o dashboard da solução (gateway#12).
 
 ## 4. Pendências detalhadas
 
@@ -217,6 +217,8 @@ reconfirmar com o João Correa se `product` vai continuar publicando `8000` sozi
 passa a depender de um compose no nível da organização (o README já fala em "orquestrado a
 partir da raiz do repo, junto com os outros serviços" — esse arquivo raiz ainda não existe).
 
+**Atualização 2026-10-25:** o Order também corrigiu (order#11, `11a3e4f`): `Services__Product__BaseUrl=http://product-api:8000` em `k8s/order.yaml` e default `:8000` no `compose.yaml`. Conferido lendo os arquivos, não rodado. Resolvido nos três consumidores.
+
 **Atualização 2026-10-24:** o Cart corrigiu em 23/10 (`2017c3b`): `k8s/shopping-cart.yaml` aponta para
 `http://product-api:8000` e o `.env.example` voltou com `http://localhost:8000` (cart#9 fechada). O
 Order continua com `Services__Product__BaseUrl=http://product:8000` em `k8s/order.yaml` e `:3002` no
@@ -305,13 +307,13 @@ completo e atual de issues está em [issues-entrega-final.md](issues-entrega-fin
 | --- | --- | --- |
 | `order` | Rodrigo | sem Ingress por decisão do grupo; contrato `OrderConfirmed` aceito, publisher/outbox pendente (PROMO-001); demais itens acompanhados nas issues do Order |
 | `shopping-cart` | João Liz | entregues no `main` em 23/10: CI, `.env.example`, `/metrics`, porta do Product, imagem multi-arch e chamada ao Promotion (INT-002). Faltam Helm (cart#5), dashboard (cart#6, parcial) e o preço vindo do Product (cart#11) |
-| `authorization` | Eduardo | sem CI; sem `/metrics`; confirmar `GET /auth/public-key` para o teste do PROMO-002 |
-| `client` | Eduardo | sem CI; sem `/metrics` |
+| `authorization` | Eduardo | entregue em 25/10 (PR #11): CI, `/metrics`, Helm, Grafana, imagem `1.2.1` multi-arch, senhas fora do manifest. Falta a chave e o usuário oficiais para o PROMO-002 (authorization#8) |
+| `client` | Eduardo | entregue em 25/10 (PR #9): CI, `/metrics`, Helm, Grafana, imagem `1.2.0` multi-arch |
 | `product` | João Correa | entregue no `main` em 24/10: `/metrics`, porta 8000 confirmada, preço e estoque, `POST /products` assíncrono, Helm, Grafana, imagem `1.1.0` multi-arch, Ingress sem `/internal` nem `/metrics`. Falta só o ensaio (#6) e fechar a mãe (#1) |
 | `vector-db` | João Correa | entregue em 24/10: Ingress público removido, `/metrics`, Helm, Grafana, compose autônomo, imagem `1.1.0` multi-arch. Falta o ensaio (#6) |
-| `embedding-reranking` | João Correa | em 24/10: Ingress removido, `/metrics`, Helm, Grafana, compose autônomo. Falta a imagem multi-arch (#3, hoje `1.0.0` só amd64) e o ensaio (#6) |
-| `llm-provider` | João Correa | nada entregue ainda: #2 a #8 abertas (Ingress público, `/metrics`, Helm, Grafana, imagem só amd64, compose) |
+| `embedding-reranking` | João Correa | em 24/10: Ingress removido, `/metrics`, Helm, Grafana, compose autônomo. Imagem `1.1.0` multi-arch publicada em 25/10. Falta o ensaio (#6) |
+| `llm-provider` | João Correa | entregue em 25/10: Ingress removido, `/metrics`, Helm, Grafana, compose autônomo, imagem `1.1.0` multi-arch. Falta o ensaio (#6) |
 | API Gateway | Lucas | repo [`api-gateway`](https://github.com/Back-End-Cloud-Computing/api-gateway) criado em 19/10/2026; implementado, com imagem `bascratki/api-gateway:1.0.0` (amd64 e arm64), testado no Minikube e com token real em 21/10. Faltam Helm, Prometheus e Grafana no cluster e o dashboard da solução |
-| Serviço de suporte (e-mail/SMS/WhatsApp) | Eduardo | repo [`support`](https://github.com/Back-End-Cloud-Computing/support) criado em 19/10/2026 com docs, issues e scaffold provisório em Go; Eduardo confirma a stack; o `order` precisa chamá-lo (issue aberta no `order`) |
+| Serviço de suporte (e-mail/SMS/WhatsApp) | Eduardo | repo [`support`](https://github.com/Back-End-Cloud-Computing/support) implementado em Java (PR #19, 25/10) com `/metrics`, Helm, Grafana e imagem `1.0.2` multi-arch; o `order` já chama o endpoint interno de notificação (order#2, lado do Order feito em `0b138e6`); consumidor RabbitMQ planejado (support#11) |
 
 Fora do código do `promotion`: Helm e dashboard existem em `product`, `vector-db` e `embedding-reranking`; Prometheus e Grafana no cluster ainda não rodam em nenhum (aula de 03/11). Padrão do grupo a combinar.
