@@ -1,6 +1,6 @@
 # Mapa de issues para a entrega final (N2, 10/11/2026)
 
-Levantamento de **20/10/2026** feito com `gh`, Docker Hub e clones limpos de cada repo (branch `main`), com as seções 2 e 3 atualizadas em **24/10/2026** contra o `main` de cada repo, as issues e o Docker Hub. Responde duas perguntas: o que falta de issue em cada repositório e o que precisa estar pronto para a apresentação rodar de ponta a ponta.
+Levantamento de **20/10/2026** feito com `gh`, Docker Hub e clones limpos de cada repo (branch `main`), com as seções 2 e 3 atualizadas em **25/10/2026** contra o `main` de cada repo, as issues e o Docker Hub. Responde duas perguntas: o que falta de issue em cada repositório e o que precisa estar pronto para a apresentação rodar de ponta a ponta.
 
 Rubrica da N2 (Plano de Ensino, aula 12): **R1** arquitetura distribuída em Kubernetes (4,0), **R2** segurança, distribuição e observabilidade (3,0), **R3** apresentação técnica (3,0). É em equipe, para a sala toda, sem frontend.
 
@@ -29,19 +29,19 @@ Fonte: manifests em `k8s/` de cada `main`, `gh run list` e a API do Docker Hub.
 |---|---|---|---|---|---|---|
 | `promotion` (Lucas) | verde | sim (negócio e HTTP) | `bascratki/promotion:1.0.0`, amd64 e arm64 | chart instalado no Minikube em 21/10 (1 réplica) | falta | Ingress só com `/api` e `/docs` |
 | `api-gateway` (Lucas) | verde | sim (porta 9100) | `bascratki/api-gateway:1.0.0`, amd64 e arm64 (21/10) | falta | falta | testado no Minikube e com token real em 21/10 |
-| `support` (Eduardo) | verde (scaffold) | falta | sem código, sem imagem | falta | falta | exigência do professor; 14 issues abertas |
-| `order` (Rodrigo) | verde | falta | `ganjj-order:local`, não publicada | falta | falta | sem Ingress por decisão do grupo (order#9 fechada como not planned em 23/10); compose usa `host.docker.internal` |
+| `support` (Eduardo) | verde | sim (25/10) | `eduardofabri/support:1.0.2`, amd64 e arm64 | chart (25/10) | JSON (25/10) | implementação em Java mergeada (PR #19); manifest ainda aponta `1.0.1`; consumidor RabbitMQ planejado (#11) |
+| `order` (Rodrigo) | verde | sim (25/10) | `ghcr.io/back-end-cloud-computing/order:latest` multi-arch (25/10) | `helm/order` (25/10) | JSON (25/10) | sem Ingress por decisão do grupo (order#9); `product-api:8000` (order#11); `POST /api/pedidos` corrigido (order#13); publisher RabbitMQ desligado até o Cart enviar o cupom |
 | `shopping-cart` (João Liz) | verde (23/10) | sim (23/10) | `jcliz/shopping-cart:1.1.0`, amd64 e arm64 (23/10) | falta (cart#5) | parcial (cart#6) | `.env.example` voltou; aponta para `product-api:8000` e chama o `promotion`; preço vem do Product, que o expõe desde 24/10 (product#9); falta rodar o fluxo |
-| `authorization` (Eduardo) | **sem CI** | falta | `eduardofabri/authorization:1.1.0`, só arm64 | falta | falta | senhas do banco e do admin em texto no manifest |
-| `client` (Eduardo) | **sem CI** | falta | `eduardofabri/client:1.1.0`, só arm64 | falta | falta | senha do Postgres em texto no manifest |
+| `authorization` (Eduardo) | verde (25/10) | sim (25/10) | `eduardofabri/authorization:1.2.1`, amd64 e arm64 | chart (25/10) | JSON (25/10) | senhas do banco e do admin saíram do manifest (PR #11); falta a chave e o usuário oficiais para o PROMO-002 (authorization#8) |
+| `client` (Eduardo) | verde (25/10) | sim (25/10) | `eduardofabri/client:1.2.0`, amd64 e arm64 | chart (25/10) | JSON (25/10) | senha do Postgres saiu do manifest (PR #9) |
 | `product` (João Correa) | verde | sim (24/10) | `joao2006/product:1.1.0`, amd64 e arm64 (24/10) | chart em `helm/product` (24/10) | `grafana/product-dashboard.json` (24/10) | Service `product-api:8000` confirmado; expõe `price` e `stock`; `POST /products` responde antes do pipeline de LLM |
-| `llm-provider` (João Correa) | verde | falta (#2) | `joao2006/llm-provider:1.0.0`, só amd64 (#3) | falta (#4) | falta (#5) | Ingress público (#8); compose (#7) |
-| `embedding-reranking` (João Correa) | verde | sim (24/10) | `joao2006/embedding-reranking:1.0.0`, só amd64 (#3 aberta) | chart (24/10) | JSON (24/10) | Ingress removido (24/10) |
+| `llm-provider` (João Correa) | verde | sim (25/10) | `joao2006/llm-provider:1.1.0`, amd64 e arm64 | chart (25/10) | JSON (25/10) | Ingress removido; compose autônomo |
+| `embedding-reranking` (João Correa) | verde | sim (24/10) | `joao2006/embedding-reranking:1.1.0`, amd64 e arm64 | chart (24/10) | JSON (24/10) | Ingress removido (24/10) |
 | `vector-db` (João Correa) | verde | sim (24/10) | `joao2006/vector-db:1.1.0`, amd64 e arm64 (24/10) | chart (24/10) | JSON (24/10) | Ingress removido (24/10) |
 
 Achados que atravessam repositórios:
 
-- **Arquitetura mista de imagem.** As imagens do Eduardo são só arm64 e as do `embedding-reranking` e `llm-provider` só amd64; as do `promotion`, do `api-gateway`, do `shopping-cart` (1.1.0, 23/10), do `product` e do `vector-db` (1.1.0, 24/10) já são multi-arch; faltam `embedding-reranking` e `llm-provider` (só amd64). Numa máquina Intel as do Eduardo dão `exec format error`; num Mac M-series as só-amd64 rodam por emulação. Para a demo, todas precisam de `linux/amd64` e `linux/arm64`.
+- **Arquitetura mista de imagem.** Resolvida em 25/10 nas tags publicadas: as do Eduardo (`authorization:1.2.1`, `client:1.2.0`, `support:1.0.2`) e as do João Correa (`1.1.0`) têm `linux/amd64` e `linux/arm64` no Docker Hub, conferido pela API. A do `order` está no GHCR e o Rodrigo declara multi-arch (order#5); não conferi. Falta alinhar os manifests: `support/k8s/support.yaml` ainda usa `1.0.1`.
 - **Nome do Service do Product (INT-009).** O Service se chama `product-api` (`product/k8s/product.yaml`), mas `order/k8s/order.yaml` ainda usa `http://product:8000` (order#11); no cluster esse nome não resolve. O gateway e o `shopping-cart` (23/10) já usam `product-api`.
 - **Compose dos serviços de IA e do Product.** Corrigido em 24/10 em `product`, `vector-db` e `embedding-reranking` (compose autônomo, a partir de um clone isolado; não rodei). Falta o `llm-provider` (#7).
 - **Ninguém chama o `promotion`** (INT-002) e não há fila RabbitMQ em nenhum manifest (PROMO-001).
@@ -121,7 +121,7 @@ Já tinha as issues #1 a #14 (scaffold, endpoint, SQLite, e-mail, SMS e WhatsApp
 
 ### `order`: issues já existentes
 
-A #2 (notificar o suporte) e a #3 (headers atrás do gateway) continuam como estavam; só a #1 é mãe das novas. A #9 (Ingress `order.ganjj.local`) foi fechada como **not planned** em 23/10 pelo Rodrigo: decisão do grupo de manter o gateway como única entrada externa do Order, sem Ingress próprio, e `/metrics` só dentro do cluster (ADR 0003 do gateway).
+Em 25/10 o Rodrigo fechou #3, #4, #5, #6, #7, #11, #13 e #14 (commits diretos na `main`); ficam abertas #1 (mãe), #2 (suporte, lado do Order feito), #8 (ensaio), #10 (contrato RabbitMQ, aceito no promotion#69) e #12 (e2e pelo gateway, bloqueada). A #9 (Ingress `order.ganjj.local`) foi fechada como **not planned** em 23/10 pelo Rodrigo: decisão do grupo de manter o gateway como única entrada externa do Order, sem Ingress próprio, e `/metrics` só dentro do cluster (ADR 0003 do gateway).
 
 ### Decisões do grupo (sem dono único)
 
