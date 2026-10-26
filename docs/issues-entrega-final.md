@@ -1,6 +1,6 @@
 # Mapa de issues para a entrega final (N2, 10/11/2026)
 
-Levantamento de **20/10/2026** feito com `gh`, Docker Hub e clones limpos de cada repo (branch `main`), com as seções 2 e 3 atualizadas em **25/10/2026** contra o `main` de cada repo, as issues e o Docker Hub. Responde duas perguntas: o que falta de issue em cada repositório e o que precisa estar pronto para a apresentação rodar de ponta a ponta.
+Levantamento de **20/10/2026** feito com `gh`, Docker Hub e clones limpos de cada repo (branch `main`), com as seções 2 e 3 atualizadas em **26/10/2026** contra o `main` de cada repo, as issues e o Docker Hub. Responde duas perguntas: o que falta de issue em cada repositório e o que precisa estar pronto para a apresentação rodar de ponta a ponta.
 
 Rubrica da N2 (Plano de Ensino, aula 12): **R1** arquitetura distribuída em Kubernetes (4,0), **R2** segurança, distribuição e observabilidade (3,0), **R3** apresentação técnica (3,0). É em equipe, para a sala toda, sem frontend.
 
@@ -29,8 +29,8 @@ Fonte: manifests em `k8s/` de cada `main`, `gh run list` e a API do Docker Hub.
 |---|---|---|---|---|---|---|
 | `promotion` (Lucas) | verde | sim (negócio e HTTP) | `bascratki/promotion:1.1.0`, amd64 e arm64 | chart instalado no Minikube em 21/10 (1 réplica) | falta | Ingress só com `/api` e `/docs` |
 | `api-gateway` (Lucas) | verde | sim (porta 9100) | `bascratki/api-gateway:1.0.0`, amd64 e arm64 (21/10) | falta | falta | testado no Minikube e com token real em 21/10 |
-| `support` (Eduardo) | verde | sim (25/10) | `eduardofabri/support:1.0.2`, amd64 e arm64 | chart (25/10) | JSON (25/10) | implementação em Java mergeada (PR #19); manifest ainda aponta `1.0.1`; consumidor RabbitMQ planejado (#11) |
-| `order` (Rodrigo) | verde | sim (25/10) | `ghcr.io/back-end-cloud-computing/order:latest` multi-arch (25/10) | `helm/order` (25/10) | JSON (25/10) | sem Ingress por decisão do grupo (order#9); `product-api:8000` (order#11); `POST /api/pedidos` corrigido (order#13); publisher RabbitMQ desligado até o Cart enviar o cupom |
+| `support` (Eduardo) | verde | sim (25/10) | `eduardofabri/support:1.0.2`, amd64 e arm64 | chart (25/10) | JSON (25/10) | implementação em Java mergeada (PR #19, #20); manifest em `1.0.2` (conferido em 26/10); consumidor RabbitMQ testado com broker real, mas o publisher do Order ainda é HTTP (#11 reaberta); evidência Order → Support → Mailpit em `support/docs/evidence/2026-10-25/` |
+| `order` (Rodrigo) | verde | sim (25/10) | `ghcr.io/back-end-cloud-computing/order:latest` multi-arch (25/10) | `helm/order` (25/10) | JSON (25/10) | sem Ingress por decisão do grupo (order#9); `product-api:8000` (order#11); `POST /api/pedidos` com Cart e Product reais ainda dá 502 (order#18, rotas `/api/cesta` e `/internal/produtos/...` diferentes das expostas); com fixtures de Cart e Product o pedido deu 201 (evidência do Rodrigo, 25/10); publisher RabbitMQ desligado até o Cart enviar o cupom |
 | `shopping-cart` (João Liz) | verde (23/10) | sim (23/10) | `jcliz/shopping-cart:1.1.0`, amd64 e arm64 (23/10) | falta (cart#5) | parcial (cart#6) | `.env.example` voltou; aponta para `product-api:8000` e chama o `promotion`; preço vem do Product, que o expõe desde 24/10 (product#9); falta rodar o fluxo |
 | `authorization` (Eduardo) | verde (25/10) | sim (25/10) | `eduardofabri/authorization:1.2.1`, amd64 e arm64 | chart (25/10) | JSON (25/10) | senhas do banco e do admin saíram do manifest (PR #11); falta a chave e o usuário oficiais para o PROMO-002 (authorization#8) |
 | `client` (Eduardo) | verde (25/10) | sim (25/10) | `eduardofabri/client:1.2.0`, amd64 e arm64 | chart (25/10) | JSON (25/10) | senha do Postgres saiu do manifest (PR #9) |
@@ -44,7 +44,8 @@ Achados que atravessam repositórios:
 - **Arquitetura mista de imagem.** Resolvida em 25/10 nas tags publicadas: as do Eduardo (`authorization:1.2.1`, `client:1.2.0`, `support:1.0.2`) e as do João Correa (`1.1.0`) têm `linux/amd64` e `linux/arm64` no Docker Hub, conferido pela API. A do `order` está no GHCR e o Rodrigo declara multi-arch (order#5); não conferi. Falta alinhar os manifests: `support/k8s/support.yaml` ainda usa `1.0.1`.
 - **Nome do Service do Product (INT-009).** O Service se chama `product-api` (`product/k8s/product.yaml`), mas `order/k8s/order.yaml` ainda usa `http://product:8000` (order#11); no cluster esse nome não resolve. O gateway e o `shopping-cart` (23/10) já usam `product-api`.
 - **Compose dos serviços de IA e do Product.** Corrigido em 24/10 em `product`, `vector-db` e `embedding-reranking` (compose autônomo, a partir de um clone isolado; não rodei). Falta o `llm-provider` (#7).
-- **Ninguém chama o `promotion`** (INT-002) e não há fila RabbitMQ em nenhum manifest (PROMO-001).
+- **Quem chama o `promotion`** (INT-002): o Cart chama `calculate` desde 23/10 e a cotação com desconto foi rodada em 25/10 (160 sem cupom, 144 com cupom de 10%). O consumo do cupom ainda não tem chamador: o consumer RabbitMQ do `promotion` (#51) não existe e o Order não recebe `coupon_code` de uma cotação do Cart. O contrato `OrderConfirmed` está aceito (promotion#69).
+- **Degradação** (shopping-cart#12): sem timeout no `fetch` do Cart, com o `promotion` fora o resultado não é determinístico (um 504, três 200 sem desconto em 25/10).
 
 ## 3. Issues do `promotion` e do `api-gateway`
 
@@ -86,6 +87,18 @@ Depois do [teste de integração](teste-integracao-2026-10.md) e das entregas do
 | Decidido, pendente de outro repo | `promotion` #50 e #51 (REST interno agora; fila depende do aceite do Rodrigo, order#10), #52 (shopping-cart#11, order#13 e order#10) |
 | Depende das aulas | `api-gateway` #11 Helm (27/10), #19 e #12 Prometheus e Grafana (03/11), `promotion` #47 dashboard (03/11, depende da api-gateway#19) |
 | Ensaio | `promotion` #54, `api-gateway` #14 (até 07/11) |
+
+### Estado em 26/10/2026
+
+Conferido com `ganjj-check --all` (janela de 25/10 16:22Z a 26/10 12:48Z), sem divergência de commit direto na `main` nem issue fechada à mão.
+
+| Estado | Itens |
+|---|---|
+| Rodado em 25/10, com evidência no lab local | cadeia pelo gateway com a imagem publicada `promotion:1.1.0` (29 PASS, 1 FAIL: o pedido); `/metrics` dos 11 serviços; `/internal` e `/metrics` em 404 pelo gateway |
+| Bloqueado por outro dono | order#18 (Rodrigo): rotas do Cart e do Product; shopping-cart#12 (João Liz): timeout para degradar |
+| Nosso, pendente | `promotion` #51 (consumer RabbitMQ), #49 (chave oficial do Eduardo), #47 (dashboard), #52 (depende de order#18 e shopping-cart#12) |
+| Depende das aulas | Helm de todos os serviços (27/10), Prometheus e Grafana (03/11) |
+| Ensaio | `promotion` #54, `api-gateway` #14, order#8 e support#14 (até 07/11) |
 
 Em 24/10 João Correa fechou product#9 e #10 e vector-db#8 e #9 (commits diretos na `main`, sem PR); esses bloqueadores caíram. Desde 23/10 esses bloqueios também estão como dependência formal do GitHub (`blocked by`, 17 vínculos entre os repos): o cartão da issue mostra "Blocked", mas o GitHub não impede fechá-la.
 
