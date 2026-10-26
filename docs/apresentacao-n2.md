@@ -47,5 +47,7 @@ sala toda. Este roteiro cobre a parte do `promotion`; a ordem final depende do g
 - [x] Imagem testada com `ImagePullPolicy` real no cluster (21/10, Minikube limpo, pull do Docker Hub).
 - [x] PROMO-002 executado com token real (21/10, chave de lab; repetir com a chave oficial do Eduardo).
 - [ ] Cart sem timeout no `fetch` do promotion: com o promotion fora, `GET /api/cart` dá 504 em vez de 200 sem desconto (dono: shopping-cart). Não demonstrar a degradação antes da correção.
+- [ ] Pedido pelo gateway (order#18, dono: order): hoje `POST /api/pedidos` dá 502 com Cart e Product reais. Não demonstrar antes da correção; depois, rodar `chain-v2.sh` e registrar o arquivo de evidência.
+- [ ] `helm install` do chart do `promotion` no padrão definido na aula de 27/10 (o chart passa em `helm lint` e `helm template`).
 - [ ] Dashboard do Grafana exportado em JSON (promotion #47; já existem os de product, vector-db, embedding-reranking e shopping-cart).
 - [ ] Ensaio com o grupo; tempo por pessoa.
