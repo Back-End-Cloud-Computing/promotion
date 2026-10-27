@@ -312,5 +312,5 @@ Registrado para honestidade técnica — em um projeto de produção pequeno, es
 3. **OpenAPI formal em um serviço isolado.** Justificável aqui porque é contrato entre cinco pessoas, mas um
    serviço solo não precisaria.
 4. **Contrato de evento RabbitMQ combinado com outro integrante**, que arranha a promessa de isolamento total —
-   é a única forma de pontuar a parte de mensageria. O REST síncrono existe como caminho de fallback caso o
-   RabbitMQ não saia a tempo.
+   é o que a rubrica da N2 (R3) exige. O consumidor do Promotion está implementado e testado sozinho
+   (`promotion:consume-orders`); o REST síncrono continua como caminho de consumo do cupom.

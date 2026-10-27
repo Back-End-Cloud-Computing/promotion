@@ -1,0 +1,54 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: promotion-consumer
+  labels:
+    app: promotion-consumer
+spec:
+  # Uma réplica basta: a idempotência por order_id já permite mais, mas a fila
+  # tem prefetch 1 e o volume da demo não pede paralelismo.
+  replicas: 1
+  selector:
+    matchLabels:
+      app: promotion-consumer
+  template:
+    metadata:
+      labels:
+        app: promotion-consumer
+    spec:
+      containers:
+        - name: consumer
+          image: bascratki/promotion:1.2.0
+          imagePullPolicy: IfNotPresent
+          # Sobrescreve o ENTRYPOINT da imagem (que roda migrate): a migration é do
+          # initContainer do Deployment `promotion`. Se o broker ainda não responde,
+          # o processo sai com erro e o Kubernetes reinicia o pod.
+          command:
+            - php
+            - artisan
+            - promotion:consume-orders
+          envFrom:
+            - configMapRef:
+                name: promotion-config
+            - secretRef:
+                name: promotion-secrets
+          env:
+            # Credenciais do broker vêm do Secret criado pelo support (k8s/rabbitmq.yaml
+            # do repositório `support`), nunca do ConfigMap.
+            - name: RABBITMQ_USER
+              valueFrom:
+                secretKeyRef:
+                  name: rabbitmq-credentials
+                  key: username
+            - name: RABBITMQ_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: rabbitmq-credentials
+                  key: password
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "96Mi"
+            limits:
+              cpu: "250m"
+              memory: "256Mi"

@@ -4,12 +4,12 @@ Ver [docs/fases/fase-3-kubernetes.md](../docs/fases/fase-3-kubernetes.md) para o
 
 ## 1. Imagem
 
-O Deployment usa a imagem publicada `bascratki/promotion:1.1.0` (Docker Hub), como os outros serviços do grupo.
+O Deployment usa a imagem publicada `bascratki/promotion:1.2.0` (Docker Hub), como os outros serviços do grupo.
 Para publicar uma versão nova (precisa de `docker login` com a conta `bascratki`):
 
 ```bash
-docker build -t bascratki/promotion:1.1.0 .
-docker push bascratki/promotion:1.1.0
+docker build -t bascratki/promotion:1.2.0 .
+docker push bascratki/promotion:1.2.0
 ```
 
 Para testar código local sem publicar, builde dentro do minikube com a mesma tag — o `IfNotPresent` usa a imagem
@@ -17,7 +17,7 @@ já carregada em vez de baixar:
 
 ```bash
 eval $(minikube docker-env)
-docker build -t bascratki/promotion:1.1.0 .
+docker build -t bascratki/promotion:1.2.0 .
 ```
 
 ## 2. Criar o Secret
@@ -28,13 +28,20 @@ encontrar em `promotion-secrets`: `APP_KEY`, `DB_PASSWORD`, `INTERNAL_SECRET`.
 
 ```bash
 kubectl create secret generic promotion-secrets \
-  --from-literal=APP_KEY="$(docker run --rm --entrypoint php bascratki/promotion:1.1.0 artisan key:generate --show)" \
+  --from-literal=APP_KEY="$(docker run --rm --entrypoint php bascratki/promotion:1.2.0 artisan key:generate --show)" \
   --from-literal=DB_PASSWORD=promotion \
   --from-literal=INTERNAL_SECRET=troque-por-um-segredo-de-verdade
 ```
 
 Precisa rodar de novo sempre que o cluster for recriado (`minikube delete`) — o Secret não é gerenciado pelo
 kustomize, só o resto (`kubectl apply -k k8s/`).
+
+### Credenciais do RabbitMQ
+
+O `promotion-consumer` lê usuário e senha do Secret `rabbitmq-credentials` (chaves `username` e `password`), o mesmo
+que o `support` usa para subir o broker (`kubectl apply -f k8s/rabbitmq.yaml` no repositório `support`). Sem esse
+Secret o pod do consumidor fica em `CreateContainerConfigError`; sem o Service `rabbitmq` ele reinicia até o broker
+responder. Ver [fase 4](../docs/fases/fase-4-integracao.md).
 
 ## 3. Ativar o Ingress Controller
 
@@ -51,6 +58,9 @@ kubectl get pods -n ingress-nginx -w   # aguardar Running antes do apply
 kubectl apply -k k8s/
 kubectl get pods -w
 ```
+
+Além das réplicas `promotion` e do MySQL, sobe o `promotion-consumer`, que consome a fila
+`promotion.order-confirmed` (`kubectl logs deploy/promotion-consumer`).
 
 ## 5. Testar
 

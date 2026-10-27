@@ -6,9 +6,9 @@
 
 ## Por que esta fase existe
 
-É a maior fatia da nota individual. E o "e/ou" da rubrica é importante: **o REST interno já satisfaz o
-critério sozinho**. O RabbitMQ é reforço, não bloqueador — o que protege a nota caso a integração com o
-serviço de Pedido atrase.
+Na rubrica da N2 (Canvas, R3) o RabbitMQ é obrigatório: precisa existir um fluxo funcional com publicação,
+consumo e processamento, e subir o broker não basta. O REST interno continua como caminho síncrono, mas não
+substitui a fila.
 
 Esta é também a primeira fase que **não roda sozinha**. Até aqui tudo foi entregável sem depender de ninguém;
 mensageria exige combinar nome de fila e formato de payload com outra pessoa.
@@ -44,8 +44,8 @@ o alvo do fechamento integrado porque permite reentrega e idempotência.
 
 Por quê:
 
-- **A rubrica aceita REST "e/ou" fila.** O REST já garante o mínimo; RabbitMQ é
-  uma decisão do grupo para demonstrar resiliência distribuída.
+- **A rubrica da N2 exige RabbitMQ num fluxo funcional (R3).** O REST segue
+  disponível, mas a fila é o que cobre publicação, consumo e processamento.
 - **Contrato único.** Os dois repositórios registram os mesmos nomes, payload,
   ack e regra de idempotência.
 - **Responsabilidades separadas.** Order publica por outbox; Promotion mantém a
@@ -65,7 +65,7 @@ implementa o consumidor. O publisher do Order ainda depende de o Cart fornecer
 documentado em [`contrato-api.md`](../contrato-api.md#mensageria--orderconfirmed).
 Entrega é pelo menos uma vez; a idempotência é por `order_id`.
 
-### 2. Consumidor RabbitMQ (contrato aceito; implementação pendente)
+### 2. Consumidor RabbitMQ (implementado em 27/10/2026, issue #51)
 
 **O evento:** Order publica `OrderConfirmed` em `ganjj.orders` com routing key
 `order.confirmed`. Este serviço consome `coupon_code` e incrementa `usage_count`.
@@ -74,13 +74,21 @@ Isso substitui a chamada HTTP síncrona de `consumir` no caminho crítico do che
 problema que mensageria resolve: se o serviço de Promoção estiver fora do ar, o pedido ainda é fechado e o
 consumo do cupom acontece quando o serviço voltar.
 
-```bash
-composer require php-amqplib/php-amqplib
-php artisan make:command ConsumirPedidosConfirmados
-```
+O consumidor roda como processo separado (`php artisan promotion:consume-orders`), no Deployment
+`promotion-consumer` ([`k8s/consumer.yaml`](../../k8s/consumer.yaml)) — **nunca dentro do request HTTP**.
+Usa `php-amqplib` (exige `ext-sockets`, instalada na imagem).
 
-O consumidor roda como processo separado (`php artisan promocao:consumir-pedidos`), em outro Deployment no
-Kubernetes — **nunca dentro do request HTTP**.
+Como funciona, em `app/Console/Commands/ConsumeOrderConfirmed.php` e
+`app/Domain/Coupons/Services/OrderConfirmedHandler.php`:
+
+- Declara a exchange, a fila `promotion.order-confirmed` (com `x-dead-letter` apontando para
+  `promotion.order-confirmed.dlq`) e o binding; prefetch 1.
+- O handler valida o payload v1 (versão, tipo do evento, `order_id` UUID, itens), consome o cupom e grava o
+  `order_id` (chave primária de `processed_orders`) **na mesma transação**.
+- Resultados: `consumed`, `duplicate`, `no_coupon`, `coupon_not_found`, `limit_reached`. Os quatro últimos
+  também recebem ack: o pedido já existe, então cupom inexistente ou esgotado não deve travar a fila.
+- Ack só depois do commit. Payload inválido ou JSON quebrado: `reject` sem requeue, a mensagem vai para a DLQ e
+  fica visível. Qualquer outra falha (banco fora): `nack` com requeue, depois de 1 s de espera.
 
 Os nomes, o payload e as propriedades AMQP estão congelados em
 [`contrato-api.md`](../contrato-api.md#mensageria--orderconfirmed).
@@ -108,24 +116,33 @@ serviços reais dos colegas, no cluster.
 | Evento consumido | Publicar `OrderConfirmed` com routing key `order.confirmed` | `usage_count` incrementa |
 | Idempotência | Publicar **a mesma** mensagem duas vezes | `usos` incrementa **uma** vez |
 | Resiliência | Derrubar o consumidor, publicar, subir de novo | Mensagem processada ao voltar |
+| Payload inválido | Publicar `schema_version: 2` e JSON quebrado | As duas na `promotion.order-confirmed.dlq`, fila principal vazia |
 
 Os dois últimos são os que provam que a mensageria foi entendida, não só ligada.
+
+**Rodado em 27/10/2026** com RabbitMQ 4.1 real (container local) e MySQL real: mensagem válida consumiu um uso
+(`usage_count` 0 para 1, `outcome=consumed`); a mesma `order_id` com outro `event_id` voltou `duplicate` sem
+novo incremento; cupom nulo voltou `no_coupon`; `schema_version: 2` e JSON quebrado foram para a DLQ (2
+mensagens, fila principal com 0). Com a tabela `processed_orders` indisponível, o consumidor fez `nack` com
+requeue 5 vezes sem tocar no cupom (`usage_count` continuou em 1); ao voltar a tabela, a mensagem foi
+processada uma única vez (`usage_count` 2). Testes automatizados em `tests/Feature/OrderConfirmedTest.php`.
 
 ## Concluída quando
 
 - [x] OpenAPI publicada e acessível (antecipada pra Fase 2)
 - [ ] Carrinho consome o cálculo com sucesso
 - [ ] Pedido consome e o uso incrementa
-- [ ] Consumidor RabbitMQ processa `OrderConfirmed`
-- [ ] Reentrega da mesma mensagem não duplica o consumo
-- [ ] Consumidor roda como Deployment separado no cluster
+- [x] Consumidor RabbitMQ processa `OrderConfirmed` (e2e local em 27/10)
+- [x] Reentrega da mesma mensagem não duplica o consumo
+- [x] Consumidor tem Deployment separado (`k8s/consumer.yaml`); falta rodar no cluster (EKS)
 - [ ] Fluxo ponta a ponta demonstrado antes de 06/10
 
 ## Riscos
 
 **Dependência de colega.** Único ponto do projeto onde a entrega depende de terceiro. Mitigação: o REST
-interno já satisfaz o "e/ou" da rubrica sozinho. Se a mensageria não sair, R2 ainda pontua — mas combinar o
-contrato do evento **logo após 15/09** dá margem para o atraso.
+interno cobre o cálculo e o consumo síncrono, mas o RabbitMQ é exigido pela rubrica (R3) e depende do Order
+publicar `OrderConfirmed`. O consumidor do Promotion já está pronto e testado com mensagens publicadas à mão;
+combinar o contrato cedo, como foi feito, é o que dá margem para o atraso do publisher.
 
 **Segredo compartilhado em trânsito.** `INTERNAL_SECRET` combinado por WhatsApp acaba em screenshot. Passar
 por canal privado e usar valores diferentes em desenvolvimento e apresentação.

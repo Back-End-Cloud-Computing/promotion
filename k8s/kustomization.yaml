@@ -8,5 +8,6 @@ resources:
   - configmap.yaml
   - mysql.yaml
   - deployment.yaml
+  - consumer.yaml
   - service.yaml
   - ingress.yaml
