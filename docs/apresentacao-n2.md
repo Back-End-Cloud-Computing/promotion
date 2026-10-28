@@ -16,13 +16,14 @@ solução rodando no **Amazon EKS**; cada integrante apresenta o próprio servi�
 | 4 | Balanceamento | 10 requisições pelo Ingress mostrando `X-Served-By` (pod do `promotion`) e `X-Gateway-Served-By` (pod do gateway) diferentes | R2 |
 | 5 | Service Discovery | ConfigMap do Cart com `http://promotion:8000`; o Cart chama `calculate` pelo nome do Service | R2 |
 | 6 | REST | carrinho com cupom pelo gateway: preço do Product e desconto do Promotion | R3 |
-| 7 | RabbitMQ | pedido gera `OrderConfirmed`; painel do RabbitMQ (`port-forward svc/rabbitmq 15672`) com publish e ack; `kubectl logs deploy/promotion-consumer` mostra `consumed`; `usage_count` do cupom sobe 1 | R3 |
+| 7 | RabbitMQ | pedido gera `OrderConfirmed`; `kubectl exec deploy/rabbitmq -- rabbitmqctl list_queues name messages consumers` mostra a fila com consumidor; `kubectl logs deploy/promotion-consumer` mostra `consumed`; `usage_count` do cupom sobe 1 | R3 |
 | 8 | Idempotência | republicar a mesma mensagem: log `duplicate`, `usage_count` não muda | R3 |
 | 9 | Autorrecuperação (extra) | `kubectl delete pod <um>` e `get pods -w` | R2 |
 
-Se o publisher do Order não estiver pronto até o ensaio, o item 7 é feito publicando `OrderConfirmed` pelo painel
-do RabbitMQ, e isso é dito na apresentação: o consumo e o processamento ficam demonstrados, a publicação pelo
-Order não.
+Se o publisher do Order não estiver pronto até o ensaio, o item 7 é feito publicando `OrderConfirmed` por AMQP de
+dentro do pod do `promotion-consumer`, como na [evidência de 27/10](evidencias/eks-2026-10-27.md), e isso é dito
+na apresentação: o consumo e o processamento ficam demonstrados, a publicação pelo Order não. Não há painel do
+RabbitMQ: a imagem do support (`rabbitmq:4.1-alpine`) não traz o plugin de management.
 
 ## Decisões para defender
 
@@ -58,7 +59,8 @@ Order não.
 
 - [x] Imagem `bascratki/promotion:1.2.0` (consumer e `X-Served-By`), amd64 e arm64, publicada em 27/10/2026.
 - [x] Consumer RabbitMQ testado com broker e MySQL reais (27/10).
-- [ ] Cluster no EKS com os 11 serviços (api-gateway#30).
+- [x] Cluster no EKS com os 11 serviços (api-gateway#30), 23 pods prontos, Ingress, balanceamento e consumo do
+  `OrderConfirmed` rodados em 27/10 ([evidência](evidencias/eks-2026-10-27.md)). Gateway em `bascratki/api-gateway:1.1.0`.
 - [ ] Publisher `OrderConfirmed` no Order (order#20) e Support ligado em `order.confirmed` (support#11).
 - [ ] Cart com timeout no `fetch` do promotion (shopping-cart#12). Não demonstrar a degradação antes disso.
 - [ ] Pedido pelo gateway no EKS (`chain-v2.sh`) com o order#19 já mergeado; registrar o arquivo de evidência.
