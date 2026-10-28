@@ -53,7 +53,8 @@ RabbitMQ: a imagem do support (`rabbitmq:4.1-alpine`) não traz o plugin de mana
 - Cupom inexistente ou esgotado no pedido? O pedido já existe, então a mensagem recebe ack com o resultado
   registrado, sem travar a fila.
 - Como provam o balanceamento? Pelos headers com o hostname do pod em cada resposta.
-- Helm, Prometheus e Grafana? Não estão na rubrica; o `promotion` tem chart e `/metrics` como extra.
+- Helm, Prometheus e Grafana? Não estão na rubrica. Extra: o `promotion` tem chart, `/metrics` e painel
+  ([`k8s/observability/`](../k8s/observability/README.md)), e o Grafana da solução sobe com o `install.sh` do api-gateway.
 
 ## Antes do dia
 
