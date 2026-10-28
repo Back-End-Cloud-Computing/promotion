@@ -1,53 +1,68 @@
 # Roteiro da apresentação N2 — 10/11/2026
 
-Rubrica (Plano de Ensino): R1 arquitetura distribuída em Kubernetes (4,0) · R2 segurança, distribuição e
-observabilidade (3,0) · R3 apresentação técnica, decisões e tecnologias (3,0). Apresentação em equipe, para a
-sala toda. Este roteiro cobre a parte do `promotion`; a ordem final depende do grupo.
+Rubrica do Canvas ([`rubrica-n2.md`](rubrica-n2.md)): **R1** microsserviços, duas linguagens e dois bancos (3 pts)
+· **R2** Amazon EKS com Docker, Services, Service Discovery, Ingress e balanceamento entre réplicas (4 pts) ·
+**R3** REST e RabbitMQ com publicação, consumo e processamento (2 pts). Apresentação em equipe, em sala, com a
+solução rodando no **Amazon EKS**; cada integrante apresenta o próprio serviço. Este roteiro cobre a parte do
+`promotion`; a ordem final depende do grupo.
 
 ## Demonstração
 
 | # | O quê | Como mostrar | Rubrica |
 |---|---|---|---|
-| 1 | Serviço rodando no cluster | `kubectl get pods` (2 réplicas `1/1`, MySQL, init container de migration) | R1 |
-| 2 | Autorrecuperação | `kubectl delete pod <um>` e `get pods -w` | R1 |
-| 3 | Entrada pelo Ingress | `curl -H "Host: promotion.ganjj.local" .../api/sale` (200) | R1 |
-| 4 | `/internal` e `/metrics` não vazam | mesma chamada em `/internal/...` e `/metrics`: 404 | R2 |
-| 5 | JWT RS256 | token real do `authorization`; admin 200, sem token 401 (ver PROMO-002) | R2 |
-| 6 | Cálculo de desconto | `POST /internal/discounts/calculate` com `x-internal-secret` | R1 |
-| 7 | Observabilidade | `/metrics` por `port-forward`; painel no Grafana com os contadores de negócio, requisições por rota e latência | R2 |
-| 8 | Distribuição | `helm install` (após a aula de 27/10) | R2 |
+| 1 | Serviço no EKS | `kubectl get pods -l app=promotion` (réplicas `1/1`), `promotion-db` e `promotion-consumer` | R2 |
+| 2 | Banco próprio | Service `promotion-db` (MySQL) usado só pelo `promotion`; nenhum outro serviço tem a credencial | R1 |
+| 3 | Acesso externo pelo Ingress | `curl http://<ELB>/api/sale` pelo gateway (200, rota pública) | R2 |
+| 4 | Balanceamento | 10 requisições pelo Ingress mostrando `X-Served-By` (pod do `promotion`) e `X-Gateway-Served-By` (pod do gateway) diferentes | R2 |
+| 5 | Service Discovery | ConfigMap do Cart com `http://promotion:8000`; o Cart chama `calculate` pelo nome do Service | R2 |
+| 6 | REST | carrinho com cupom pelo gateway: preço do Product e desconto do Promotion | R3 |
+| 7 | RabbitMQ | pedido gera `OrderConfirmed`; `kubectl exec deploy/rabbitmq -- rabbitmqctl list_queues name messages consumers` mostra a fila com consumidor; `kubectl logs deploy/promotion-consumer` mostra `consumed`; `usage_count` do cupom sobe 1 | R3 |
+| 8 | Idempotência | republicar a mesma mensagem: log `duplicate`, `usage_count` não muda | R3 |
+| 9 | Autorrecuperação (extra) | `kubectl delete pod <um>` e `get pods -w` | R2 |
 
-## Decisões para defender (R3)
+Se o publisher do Order não estiver pronto até o ensaio, o item 7 é feito publicando `OrderConfirmed` por AMQP de
+dentro do pod do `promotion-consumer`, como na [evidência de 27/10](evidencias/eks-2026-10-27.md), e isso é dito
+na apresentação: o consumo e o processamento ficam demonstrados, a publicação pelo Order não. Não há painel do
+RabbitMQ: a imagem do support (`rabbitmq:4.1-alpine`) não traz o plugin de management.
 
+## Decisões para defender
+
+- Gateway como entrada única: o Ingress NGINX tem regra para o `api-gateway`, que roteia por path para cada
+  serviço. Regras de Ingress por serviço foram descartadas pelo prazo (decisão de 27/10).
+- Fila para o consumo do cupom, com idempotência por `order_id` gravado na mesma transação do incremento: o
+  REST `consume` não recebe `order_id`, então um retry do Order consumiria o cupom duas vezes.
+- Ack só depois do commit; payload inválido vai para a DLQ `promotion.order-confirmed.dlq`; falha de banco
+  volta para a fila.
+- Consumidor em Deployment próprio (`promotion-consumer`), nunca dentro do request HTTP.
 - Serviço autocontido: roda e é avaliável sem depender de nenhum colega.
 - Três tabelas em vez de modelo unificado (ver `arquitetura.md`).
 - Dinheiro em centavos inteiros; percentual é a única operação em ponto flutuante.
-- Migration em initContainer, não no entrypoint, para não rodar em paralelo com 2 réplicas.
+- Migration em initContainer, não no entrypoint, para não rodar em paralelo com várias réplicas.
 - Liveness sem banco, readiness com banco: lentidão do MySQL não derruba todos os pods.
-- Ingress por lista de permissão (`/api`, `/docs`); `/internal` protegido por rede e por segredo.
-- Métricas de domínio (`motivo` de recusa) em vez de só métricas HTTP; contadores por pod.
-- Consumo do cupom por REST interno, não por fila: a rubrica aceita "REST e/ou fila" e o contrato do evento depende do Order (ver `fases/fase-4-integracao.md`).
+- `/internal` e `/metrics` fora do gateway: protegidos por rede e por segredo.
 - `product_id` é string porque o Product usa ObjectId do Mongo; inteiro ainda é aceito.
-- RS256 com chave pública em ConfigMap: não é segredo. Segredos só em Secret.
 
 ## Perguntas prováveis
 
 - Por que PHP/Laravel? Stack livre confirmada pelo professor; o foco é a arquitetura.
-- Por que não promphp? Três contadores não justificam a dependência; ver `fases/fase-5-seguranca.md`.
-- Os contadores zeram se o pod reinicia? Sim; o Prometheus trata reset de counter (`rate()`/`increase()`).
-- Quem chama o `promotion`? Pelo ADR do Order, o Cart compõe a cotação (INT-002). O Cart chama `calculate` desde 23/10; o Product expõe preço e estoque desde 24/10 (product#9). Rodado em 25/10: cart com preço do Product e desconto do Promotion (160 e 144); o pedido no Order ainda falha por rotas diferentes do Cart e do Product (ver `teste-integracao-2026-10.md`). O consumo do cupom ainda não tem chamador.
-
-- Vocês testaram tudo junto? Sim, em 21/10: 11 repos no Compose e no Minikube, com achados e issues por dono (`teste-integracao-2026-10.md`).
-- Por que não tem fila? Ver a decisão acima; a proposta de contrato do evento está escrita e depende do aceite do Order.
+- E se a mesma mensagem chegar duas vezes? `order_id` é chave primária de `processed_orders`; a segunda vira
+  `duplicate` e o incremento é desfeito na mesma transação (rodado com broker real em 27/10, ver
+  `fases/fase-4-integracao.md`).
+- E se o banco cair no meio? Nada é gravado e a mensagem volta para a fila; quando o banco volta, é processada
+  uma vez.
+- Cupom inexistente ou esgotado no pedido? O pedido já existe, então a mensagem recebe ack com o resultado
+  registrado, sem travar a fila.
+- Como provam o balanceamento? Pelos headers com o hostname do pod em cada resposta.
+- Helm, Prometheus e Grafana? Não estão na rubrica; o `promotion` tem chart e `/metrics` como extra.
 
 ## Antes do dia
 
-- [x] Imagem publicada: `bascratki/promotion:1.1.0`, multi-arch (amd64 e arm64), em 25/10/2026 (a 1.0.0, de 19/10, não tinha `product_id` string nem métricas HTTP).
-- [x] Chart Helm instalado no Minikube (21/10, 1 réplica, `/api/sale` 200 pelo Ingress).
-- [x] Imagem testada com `ImagePullPolicy` real no cluster (21/10, Minikube limpo, pull do Docker Hub).
-- [x] PROMO-002 executado com token real (21/10, chave de lab; repetir com a chave oficial do Eduardo).
-- [ ] Cart sem timeout no `fetch` do promotion: com o promotion fora, `GET /api/cart` dá 504 em vez de 200 sem desconto (dono: shopping-cart). Não demonstrar a degradação antes da correção.
-- [ ] Pedido pelo gateway (order#18, dono: order): hoje `POST /api/pedidos` dá 502 com Cart e Product reais. Não demonstrar antes da correção; depois, rodar `chain-v2.sh` e registrar o arquivo de evidência.
-- [ ] `helm install` do chart do `promotion` no padrão definido na aula de 27/10 (o chart passa em `helm lint` e `helm template`).
-- [ ] Dashboard do Grafana exportado em JSON (promotion #47; já existem os de product, vector-db, embedding-reranking e shopping-cart).
-- [ ] Ensaio com o grupo; tempo por pessoa.
+- [x] Imagem `bascratki/promotion:1.2.0` (consumer e `X-Served-By`), amd64 e arm64, publicada em 27/10/2026.
+- [x] Consumer RabbitMQ testado com broker e MySQL reais (27/10).
+- [x] Cluster no EKS com os 11 serviços (api-gateway#30), 23 pods prontos, Ingress, balanceamento e consumo do
+  `OrderConfirmed` rodados em 27/10 ([evidência](evidencias/eks-2026-10-27.md)). Gateway em `bascratki/api-gateway:1.1.0`.
+- [ ] Publisher `OrderConfirmed` no Order (order#20) e Support ligado em `order.confirmed` (support#11).
+- [ ] Cart com timeout no `fetch` do promotion (shopping-cart#12). Não demonstrar a degradação antes disso.
+- [ ] Pedido pelo gateway no EKS (`chain-v2.sh`) com o order#19 já mergeado; registrar o arquivo de evidência.
+- [ ] Perguntar ao professor sobre 9 x 10 pontos.
+- [ ] Ensaio com o grupo no EKS; tempo por pessoa.

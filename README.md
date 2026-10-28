@@ -28,4 +28,4 @@ php artisan serve
 
 ## Documentação
 
-A documentação de arquitetura e o plano por fases estão em `docs/`.
+A documentação de arquitetura e o plano por fases estão em `docs/`. A rubrica da N2 e como o projeto atende cada critério estão em [`docs/rubrica-n2.md`](docs/rubrica-n2.md).

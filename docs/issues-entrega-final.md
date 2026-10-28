@@ -2,7 +2,7 @@
 
 Levantamento de **20/10/2026** feito com `gh`, Docker Hub e clones limpos de cada repo (branch `main`), com as seções 2 e 3 atualizadas em **26/10/2026** contra o `main` de cada repo, as issues e o Docker Hub. Responde duas perguntas: o que falta de issue em cada repositório e o que precisa estar pronto para a apresentação rodar de ponta a ponta.
 
-Rubrica da N2 (Plano de Ensino, aula 12): **R1** arquitetura distribuída em Kubernetes (4,0), **R2** segurança, distribuição e observabilidade (3,0), **R3** apresentação técnica (3,0). É em equipe, para a sala toda, sem frontend.
+Rubrica da N2: a do **Canvas**, em [`rubrica-n2.md`](rubrica-n2.md) (desde 27/10/2026). **R1** microsserviços, duas linguagens e dois bancos (3), **R2** Amazon EKS com Services, Service Discovery, Ingress e balanceamento (4), **R3** REST e RabbitMQ em fluxo funcional (2). A rubrica do Plano de Ensino (R1 4,0 · R2 3,0 · R3 3,0), usada nas seções abaixo até 26/10, foi substituída. É em equipe, para a sala toda, sem frontend.
 
 > As issues dos repos dos outros integrantes foram **criadas por mim com o dono como assignee**, a pedido do Lucas (seção 4). Nenhum código ou texto de issue deles foi editado; as únicas mudanças em issues existentes foram os labels de origem no `support` (#1 a #14) e o fechamento das 3 duplicadas que eu mesmo criei lá.
 
@@ -10,16 +10,16 @@ Rubrica da N2 (Plano de Ensino, aula 12): **R1** arquitetura distribuída em Kub
 
 A entrega está pronta quando, a partir de clones limpos e sem imagem local:
 
-- [ ] Os serviços sobem num Minikube com `kubectl apply` (ou `helm install`) e todos os pods ficam `Ready`, sem `ImagePullBackOff` nem `exec format error`.
+- [ ] Os serviços sobem no **Amazon EKS** com `kubectl apply` e todos os pods ficam `Ready`, sem `ImagePullBackOff` nem `exec format error` (api-gateway#30). Minikube serve para desenvolver, não substitui o EKS.
 - [ ] Fluxo ponta a ponta pelo gateway: registrar e logar no `authorization`, usar o token em `/clients`, `/products`, carrinho, pedido e promoções; sem token ou com token inválido, 401.
-- [ ] Cotação e consumo de cupom: o carrinho chama o `promotion` com `x-internal-secret` e o pedido consome o cupom (REST interno e/ou fila).
+- [ ] Cotação e consumo de cupom: o carrinho chama o `promotion` com `x-internal-secret` e o pedido publica `OrderConfirmed` no RabbitMQ e o `promotion` consome o cupom (fila obrigatória pela R3; o REST interno continua disponível).
 - [ ] Pedido criado gera notificação pelo serviço de suporte (e-mail no Mailpit), sem derrubar o pedido se o suporte falhar.
-- [ ] Observabilidade da solução (professor): Prometheus e Grafana instalados no cluster, raspando o gateway, com um painel único em JSON. `/metrics` e dashboard por serviço são extra nosso.
-- [ ] Helm: um chart por serviço, instalando com `values.yaml` (imagem, réplicas, recursos, host).
-- [ ] Segurança: `/internal` e `/metrics` não aparecem no Ingress, serviços internos sem Ingress público, nenhuma senha em texto nos manifests, JWT RS256 validado com chave pública real.
+- [ ] Balanceamento com evidência: várias réplicas e headers `X-Served-By` / `X-Gateway-Served-By` mostrando pods diferentes.
+- [ ] Ingress NGINX com o gateway como entrada única; `/internal` e `/metrics` fora; nenhuma senha em texto nos manifests.
+- Extra, fora da rubrica do Canvas (`origem: nossa`): Prometheus e Grafana, Helm, JWT RS256 com chave real.
 - [ ] Roteiro e ensaio com o grupo, com tempo por pessoa.
 
-Datas: Helm em **27/10**, Prometheus e Grafana em **03/11**, teste integrado completo antes de **03/11**, ensaio até **07/11**, N2 em **10/11**.
+Datas: kit EKS e teste integrado até **03/11**, cluster e ensaio no EKS até **07/11**, N2 em **10/11**.
 
 ## 2. Situação por repositório
 
@@ -27,7 +27,7 @@ Fonte: manifests em `k8s/` de cada `main`, `gh run list` e a API do Docker Hub.
 
 | Repo (dono) | CI na main | `/metrics` | Imagem publicada | Helm | Grafana JSON | Observação |
 |---|---|---|---|---|---|---|
-| `promotion` (Lucas) | verde | sim (negócio e HTTP) | `bascratki/promotion:1.1.0`, amd64 e arm64 | chart instalado no Minikube em 21/10 (1 réplica) | falta | Ingress só com `/api` e `/docs` |
+| `promotion` (Lucas) | verde | sim (negócio e HTTP) | `bascratki/promotion:1.2.0`, amd64 e arm64 (27/10, consumer RabbitMQ e `X-Served-By`) | chart instalado no Minikube em 21/10 (1 réplica) | falta | Ingress só com `/api` e `/docs` |
 | `api-gateway` (Lucas) | verde | sim (porta 9100) | `bascratki/api-gateway:1.0.0`, amd64 e arm64 (21/10) | falta | falta | testado no Minikube e com token real em 21/10 |
 | `support` (Eduardo) | verde | sim (25/10) | `eduardofabri/support:1.0.2`, amd64 e arm64 | chart (25/10) | JSON (25/10) | implementação em Java mergeada (PR #19, #20); manifest em `1.0.2` (conferido em 26/10); consumidor RabbitMQ testado com broker real, mas o publisher do Order ainda é HTTP (#11 reaberta); evidência Order → Support → Mailpit em `support/docs/evidence/2026-10-25/` |
 | `order` (Rodrigo) | verde | sim (25/10) | `ghcr.io/back-end-cloud-computing/order:latest` multi-arch (25/10) | `helm/order` (25/10) | JSON (25/10) | sem Ingress por decisão do grupo (order#9); `product-api:8000` (order#11); `POST /api/pedidos` com Cart e Product reais ainda dá 502 (order#18, rotas `/api/cesta` e `/internal/produtos/...` diferentes das expostas); com fixtures de Cart e Product o pedido deu 201 (evidência do Rodrigo, 25/10); publisher RabbitMQ desligado até o Cart enviar o cupom |
@@ -44,7 +44,7 @@ Achados que atravessam repositórios:
 - **Arquitetura mista de imagem.** Resolvida em 25/10 nas tags publicadas: as do Eduardo (`authorization:1.2.1`, `client:1.2.0`, `support:1.0.2`) e as do João Correa (`1.1.0`) têm `linux/amd64` e `linux/arm64` no Docker Hub, conferido pela API. A do `order` está no GHCR e o Rodrigo declara multi-arch (order#5); não conferi. Falta alinhar os manifests: `support/k8s/support.yaml` ainda usa `1.0.1`.
 - **Nome do Service do Product (INT-009).** O Service se chama `product-api` (`product/k8s/product.yaml`), mas `order/k8s/order.yaml` ainda usa `http://product:8000` (order#11); no cluster esse nome não resolve. O gateway e o `shopping-cart` (23/10) já usam `product-api`.
 - **Compose dos serviços de IA e do Product.** Corrigido em 24/10 em `product`, `vector-db` e `embedding-reranking` (compose autônomo, a partir de um clone isolado; não rodei). Falta o `llm-provider` (#7).
-- **Quem chama o `promotion`** (INT-002): o Cart chama `calculate` desde 23/10 e a cotação com desconto foi rodada em 25/10 (160 sem cupom, 144 com cupom de 10%). O consumo do cupom ainda não tem chamador: o consumer RabbitMQ do `promotion` (#51) não existe e o Order não recebe `coupon_code` de uma cotação do Cart. O contrato `OrderConfirmed` está aceito (promotion#69).
+- **Quem chama o `promotion`** (INT-002): o Cart chama `calculate` desde 23/10 e a cotação com desconto foi rodada em 25/10 (160 sem cupom, 144 com cupom de 10%). O consumer RabbitMQ do `promotion` existe desde 27/10 (#51, PR #78); falta o publisher no Order (order#20), e o Order ainda não recebe `coupon_code` de uma cotação do Cart. O contrato `OrderConfirmed` está aceito (promotion#69).
 - **Degradação** (shopping-cart#12): sem timeout no `fetch` do Cart, com o `promotion` fora o resultado não é determinístico (um 504, três 200 sem desconto em 25/10).
 
 ## 3. Issues do `promotion` e do `api-gateway`
@@ -142,7 +142,7 @@ Combinar no grupo (registrar em issue do `promotion` se virar tarefa):
 
 - **Padrão de Helm**: um chart por serviço ou guarda-chuva; `values.yaml` com imagem, réplicas, recursos e host. Sugestão: um chart por serviço, igual ao `helm/promotion`.
 - **Padrão de Prometheus e Grafana**: a rubrica pede observabilidade da solução, então o mínimo é o gateway. `GET /metrics`, anotações `prometheus.io/*` e `/metrics` fora do Ingress por serviço é decisão nossa, não do professor.
-- **Ambiente da demo**: Minikube (padrão dos laboratórios, sem custo) ou Amazon EKS (laboratório da aula 06, consome crédito do Learner Lab).
+- **Ambiente da demo**: decidido em 27/10, **Amazon EKS** (obrigatório pela rubrica do Canvas), na conta AWS education do Lucas, que conduz a demo. Kit em api-gateway#30.
 - **Imagem**: todas multi-arch (`docker buildx build --platform linux/amd64,linux/arm64`), com a mesma tag do manifest.
 - **Ordem das falas** e quem conduz a demo ao vivo.
 

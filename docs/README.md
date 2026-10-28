@@ -10,6 +10,8 @@ Documentação de arquitetura e planejamento do serviço. Escrita para ser lida 
 | [Contrato da API](contrato-api.md) | Referência de endpoints para quem vai **consumir** este serviço (Carrinho, Pedido, Gateway) |
 | [Regras de negócio](regras-de-negocio.md) | As regras de desconto e cupom, com os casos de teste que provam cada uma |
 | [Mapa de issues da entrega final](issues-entrega-final.md) | O que falta de issue em cada repo e o que precisa estar pronto para a N2 rodar de ponta a ponta |
+| [Rubrica da N2 (Canvas)](rubrica-n2.md) | Critérios oficiais (R1 3, R2 4, R3 2), requisitos e como o projeto atende cada um |
+| [Evidência no EKS 27/10](evidencias/eks-2026-10-27.md) | Os 11 serviços no Amazon EKS: pods, Ingress pelo ELB, balanceamento e consumo do `OrderConfirmed` |
 | [Teste de integração 21/10](teste-integracao-2026-10.md) | Os 11 repos no Compose e no Minikube: o que sobe, o que quebra e as issues geradas |
 | [Alinhamento JWT/RS256](alinhamento-jwt-rs256.md) | ✅ Resolvido — ver [ADR 0002](adr/0002-jwt-rs256-chave-estatica.md); falta só validar com token real do Autorização |
 
@@ -24,7 +26,7 @@ Cada fase é entregável por si só e está ancorada numa data do cronograma da 
 | 2 | [Docker](fases/fase-2-docker.md) | após 18/08 | Imagem, compose, health checks |
 | 3 | [Kubernetes](fases/fase-3-kubernetes.md) | após 25/08 | Manifests, probes, secrets |
 | 4 | [Integração e mensageria](fases/fase-4-integracao.md) | após 15/09 | REST interno + RabbitMQ |
-| 5 | [Segurança e observabilidade](fases/fase-5-seguranca.md) | após 20/10 | JWT alinhado, métricas, Helm — **obrigatórios** pelo Plano de Ensino (R2 da N2) |
+| 5 | [Segurança e observabilidade](fases/fase-5-seguranca.md) | após 20/10 | JWT alinhado, métricas, Helm — extra; fora da rubrica do Canvas (ver [rubrica-n2.md](rubrica-n2.md)) |
 | N2 | [Roteiro da apresentação](apresentacao-n2.md) | 10/11/2026 | O que mostrar, em que ordem, e o que responder |
 
 ## Datas que não se movem
@@ -40,7 +42,7 @@ Cada fase é entregável por si só e está ancorada numa data do cronograma da 
 | 20/10 | Aula de Segurança com JWT |
 | 27/10 | Aula de Helm |
 | 03/11 | Aula de Observabilidade |
-| **10/11/2026 (terça)** | **N2 — apresentação em equipe, 40% da nota** (confirmado no Plano de Ensino oficial, aula 12; o Canvas não tem tarefa nem data da N2) |
+| **10/11/2026 (terça)** | **N2 — apresentação em equipe, 40% da nota** (tarefa "Avaliação Somativa N2" no Canvas, 10 pontos, implantação obrigatória no Amazon EKS; ver [rubrica-n2.md](rubrica-n2.md)) |
 
 ## Pendências fora do código
 
