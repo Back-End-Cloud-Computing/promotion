@@ -37,6 +37,9 @@ config:
   DB_PORT: "3306"
   DB_DATABASE: promotion
   DB_USERNAME: promotion
+  # Broker do repositório `support` (Service `rabbitmq`); usuário e senha vêm de consumer.rabbitmqSecret.
+  RABBITMQ_HOST: rabbitmq
+  RABBITMQ_PORT: "5672"
   SESSION_DRIVER: array
   CACHE_STORE: array
   QUEUE_CONNECTION: sync
@@ -61,3 +64,17 @@ mysql:
   enabled: true
   image: mysql:8.0
   storage: 1Gi
+
+# Consome OrderConfirmed (php artisan promotion:consume-orders). Precisa do RabbitMQ do support.
+consumer:
+  enabled: true
+  replicaCount: 1
+  # Secret criado pelo support (k8s/rabbitmq.yaml do repo `support`), chaves username e password.
+  rabbitmqSecret: rabbitmq-credentials
+  resources:
+    requests:
+      cpu: 50m
+      memory: 96Mi
+    limits:
+      cpu: 250m
+      memory: 256Mi
