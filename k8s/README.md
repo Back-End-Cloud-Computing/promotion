@@ -79,6 +79,8 @@ curl -i http://promotion.ganjj.local/metrics                        # 404
 curl localhost:8000/metrics
 ```
 
+Painel do Grafana com essas métricas: [`observability/`](observability/README.md).
+
 ## 6. Provar autorrecuperação
 
 ```bash
