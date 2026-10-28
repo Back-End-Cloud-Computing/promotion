@@ -1,6 +1,7 @@
 <?php
 
 use App\Domain\Coupons\Exceptions\DuplicateCouponCodeException;
+use App\Http\Middleware\AddServedBy;
 use App\Http\Middleware\RecordHttpMetrics;
 use App\Http\Middleware\VerifyAdmin;
 use App\Http\Middleware\VerifyInternalSecret;
@@ -27,6 +28,7 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->append(RecordHttpMetrics::class);
+        $middleware->append(AddServedBy::class);
         $middleware->alias([
             'jwt' => VerifyJwt::class,
             'admin' => VerifyAdmin::class,
