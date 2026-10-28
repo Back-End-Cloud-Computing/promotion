@@ -1,0 +1,45 @@
+{{- if .Values.consumer.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: promotion-consumer
+  labels:
+    app: promotion-consumer
+spec:
+  replicas: {{ .Values.consumer.replicaCount }}
+  selector:
+    matchLabels:
+      app: promotion-consumer
+  template:
+    metadata:
+      labels:
+        app: promotion-consumer
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+    spec:
+      containers:
+        - name: consumer
+          image: {{ printf "%s:%s" .Values.image.repository (default .Chart.AppVersion .Values.image.tag) }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          # Sobrescreve o ENTRYPOINT (migrate): a migration é do initContainer do Deployment promotion.
+          # Sem broker, o processo sai com erro e o Kubernetes reinicia o pod.
+          command: [php, artisan, promotion:consume-orders]
+          envFrom:
+            - configMapRef:
+                name: promotion-config
+            - secretRef:
+                name: {{ .Values.existingSecret }}
+          env:
+            - name: RABBITMQ_USER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.consumer.rabbitmqSecret }}
+                  key: username
+            - name: RABBITMQ_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.consumer.rabbitmqSecret }}
+                  key: password
+          resources:
+            {{- toYaml .Values.consumer.resources | nindent 12 }}
+{{- end }}
