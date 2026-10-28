@@ -227,8 +227,8 @@ deve repetir em timeout. O contrato RabbitMQ aceito resolve isso com idempotênc
 
 ## Mensageria — `OrderConfirmed`
 
-Status: contrato aceito em Order e Promotion; publisher e consumidor continuam
-como implementações separadas.
+Status: contrato aceito em Order e Promotion. O consumidor do Promotion está implementado
+(`php artisan promotion:consume-orders`, issue #51); o publisher do Order continua como implementação separada.
 
 | Elemento | Valor |
 |---|---|
@@ -237,6 +237,7 @@ como implementações separadas.
 | Routing key | `order.confirmed` |
 | Fila do Promotion | `promotion.order-confirmed`, durável |
 | Binding | `promotion.order-confirmed` -> `ganjj.orders` com `order.confirmed` |
+| Fila morta | `promotion.order-confirmed.dlq`, durável; recebe payload inválido rejeitado sem requeue |
 | Entrega | mensagem persistente, publisher confirm, ack manual no consumidor |
 | Content type | `application/json` |
 

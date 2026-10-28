@@ -16,6 +16,10 @@ data:
   DB_PORT: "3306"
   DB_DATABASE: "promotion"
   DB_USERNAME: "promotion"
+  # Broker do repositório `support` (Service `rabbitmq`); usuário e senha vêm do Secret
+  # `rabbitmq-credentials`, não daqui.
+  RABBITMQ_HOST: "rabbitmq"
+  RABBITMQ_PORT: "5672"
   SESSION_DRIVER: "array"
   CACHE_STORE: "array"
   QUEUE_CONNECTION: "sync"
