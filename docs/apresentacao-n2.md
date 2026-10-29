@@ -20,9 +20,7 @@ solução rodando no **Amazon EKS**; cada integrante apresenta o próprio servi�
 | 8 | Idempotência | republicar a mesma mensagem: log `duplicate`, `usage_count` não muda | R3 |
 | 9 | Autorrecuperação (extra) | `kubectl delete pod <um>` e `get pods -w` | R2 |
 
-Se o publisher do Order não estiver pronto até o ensaio, o item 7 é feito publicando `OrderConfirmed` por AMQP de
-dentro do pod do `promotion-consumer`, como na [evidência de 27/10](evidencias/eks-2026-10-27.md), e isso é dito
-na apresentação: o consumo e o processamento ficam demonstrados, a publicação pelo Order não. Não há painel do
+O publisher do Order está mergeado ([order#21](https://github.com/Back-End-Cloud-Computing/order/pull/21)), mas publica `coupon_code` nulo: o Promotion consome e dá ack sem incrementar cupom. Por isso o item 7 mostra a publicação real do Order na fila e, para o `usage_count` subir, publica `OrderConfirmed` com cupom por AMQP de dentro do pod do `promotion-consumer`, como na [evidência de 27/10](evidencias/eks-2026-10-27.md). Dizer isso na apresentação: publicação, consumo e processamento existem, mas o Order ainda não leva o cupom na mensagem. Não há painel do
 RabbitMQ: a imagem do support (`rabbitmq:4.1-alpine`) não traz o plugin de management.
 
 ## Decisões para defender
@@ -61,8 +59,8 @@ RabbitMQ: a imagem do support (`rabbitmq:4.1-alpine`) não traz o plugin de mana
 - [x] Imagem `bascratki/promotion:1.2.0` (consumer e `X-Served-By`), amd64 e arm64, publicada em 27/10/2026.
 - [x] Consumer RabbitMQ testado com broker e MySQL reais (27/10).
 - [x] Cluster no EKS com os 11 serviços (api-gateway#30), 23 pods prontos, Ingress, balanceamento e consumo do
-  `OrderConfirmed` rodados em 27/10 ([evidência](evidencias/eks-2026-10-27.md)). Gateway em `bascratki/api-gateway:1.1.0`.
-- [ ] Publisher `OrderConfirmed` no Order (order#20) e Support ligado em `order.confirmed` (support#11).
+  `OrderConfirmed` rodados em 27/10 ([evidência](evidencias/eks-2026-10-27.md)). Gateway em `bascratki/api-gateway:1.1.1`, rodado no EKS em 28/10.
+- [x] Publisher `OrderConfirmed` no Order mergeado (order#21, 28/10). Falta rodá-lo no EKS e decidir se o `coupon_code` entra na mensagem. O Support segue em `order.created`, que o Order publica (order#22).
 - [ ] Cart com timeout no `fetch` do promotion (shopping-cart#12). Não demonstrar a degradação antes disso.
 - [ ] Pedido pelo gateway no EKS (`chain-v2.sh`) com o order#19 já mergeado; registrar o arquivo de evidência.
 - [ ] Perguntar ao professor sobre 9 x 10 pontos.
