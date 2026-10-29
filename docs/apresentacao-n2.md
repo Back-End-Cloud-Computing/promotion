@@ -61,7 +61,40 @@ RabbitMQ: a imagem do support (`rabbitmq:4.1-alpine`) não traz o plugin de mana
 - [x] Cluster no EKS com os 11 serviços (api-gateway#30), 23 pods prontos, Ingress, balanceamento e consumo do
   `OrderConfirmed` rodados em 27/10 ([evidência](evidencias/eks-2026-10-27.md)). Gateway em `bascratki/api-gateway:1.1.1`, rodado no EKS em 28/10.
 - [x] Publisher `OrderConfirmed` no Order mergeado (order#21, 28/10). Falta rodá-lo no EKS e decidir se o `coupon_code` entra na mensagem. O Support segue em `order.created`, que o Order publica (order#22).
-- [ ] Cart com timeout no `fetch` do promotion (shopping-cart#12). Não demonstrar a degradação antes disso.
-- [ ] Pedido pelo gateway no EKS (`chain-v2.sh`) com o order#19 já mergeado; registrar o arquivo de evidência.
+- [x] Cart com timeout no `fetch` do promotion (shopping-cart#12, resolvido em 28/10). Reconferir a degradação no EKS antes de demonstrá-la.
+
+## O que falta (29/10/2026)
+
+O cluster `ganjj` de 27/10 já não existe: o `eksctl delete` foi cortado pelo fim do lab e o control plane pode ter
+sobrado. A evidência do EKS é daquele cluster, então o ensaio precisa recriá-lo.
+
+**Lucas**
+
+- [ ] Na próxima sessão do Learner Lab, terminar a remoção (`eksctl delete cluster --name ganjj --region us-east-1`)
+  e conferir que `aws eks list-clusters --region us-east-1` volta vazio. O control plane cobra crédito.
+- [ ] Recriar o cluster (`eks/create-cluster.sh` e `eks/apply.sh`, 15 a 20 min mais o apply) e cronometrar. A sessão do lab dura 4 h.
+- [ ] Rodar o fluxo completo no EKS: pedido pelo gateway (`chain-v2.sh`), publisher do Order e consumer do Promotion. Nunca foi feito com o Order real. Registrar o arquivo de evidência.
+- [ ] `php artisan db:seed --force` no promotion depois do deploy: os bancos estão em `emptyDir` e o cupom `BEMVINDO10` some a cada recriação de pod.
 - [ ] Perguntar ao professor sobre 9 x 10 pontos.
-- [ ] Ensaio com o grupo no EKS; tempo por pessoa.
+- [ ] Ensaio com o grupo no EKS, com tempo por pessoa ([promotion#54](https://github.com/Back-End-Cloud-Computing/promotion/issues/54), [api-gateway#14](https://github.com/Back-End-Cloud-Computing/api-gateway/issues/14)).
+- [ ] JWT com token real, extra fora da nota ([promotion#49](https://github.com/Back-End-Cloud-Computing/promotion/issues/49), [api-gateway#13](https://github.com/Back-End-Cloud-Computing/api-gateway/issues/13)): depende do Eduardo.
+- [ ] Cotação do carrinho e consumo no pedido ([promotion#52](https://github.com/Back-End-Cloud-Computing/promotion/issues/52)): destravada em parte pelo order#20, mas esbarra no `coupon_code` nulo.
+
+**Rodrigo (Order)**
+
+- [ ] Decidir se `coupon_code` entra na mensagem `OrderConfirmed`. Sem isso o `usage_count` só sobe com mensagem manual. O Cart precisa fornecer a cotação.
+- [ ] Rodar o publisher no cluster compartilhado e fechar o E2E pelo gateway ([order#12](https://github.com/Back-End-Cloud-Computing/order/issues/12)).
+- [ ] Ensaio ([order#8](https://github.com/Back-End-Cloud-Computing/order/issues/8)) e readiness ([order#1](https://github.com/Back-End-Cloud-Computing/order/issues/1)).
+
+**Eduardo (Support, Authorization, Client)**
+
+- [ ] Ensaio ([support#14](https://github.com/Back-End-Cloud-Computing/support/issues/14)).
+- [ ] Token real do Authorization para o teste do JWT (ver acima).
+- [ ] Opcional: ligar o Support também em `order.confirmed` ([support#12](https://github.com/Back-End-Cloud-Computing/support/issues/12) é SMS e WhatsApp reais, extra).
+
+**Todos**
+
+- [ ] Imagem amd64 pública de cada serviço, conferida pelo `apply.sh` no cluster novo (pod `Running`, não `ImagePullBackOff`).
+- [ ] Trabalhar por PR: o shopping-cart teve 5 commits direto na `main` e issues fechadas sem commit referenciando.
+
+**Se não fechar até 10/11:** apresentar o RabbitMQ com a mensagem publicada por AMQP e dizer que o Order ainda não leva o cupom. O roteiro acima já prevê isso. O ensaio no EKS é o único item que não dá para pular.
