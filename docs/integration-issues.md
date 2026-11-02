@@ -19,14 +19,14 @@ coisa. IDs `PROMO-*` são específicos deste serviço.
 | ID | Tema | Serviços afetados | Situação | Bloqueia agora? |
 | --- | --- | --- | --- | --- |
 | INT-001 | Contrato de JWT (RS256 vs HS256) | Authorization, Order, Cart, Promotion | Resolvido — Order e Cart migraram pra RS256 | Não — falta só validar ponta a ponta com token real |
-| INT-002 | Cotação final do carrinho | Cart, Product, Promotion e Order | Cart chama `calculate` desde 23/10 (`82dbbfb`, `2bf1dfa`). O Product expõe `price` e `stock` desde 24/10 (product#9 fechada, `fb7b26b`); Cart → Product → Promotion rodado em 25/10 no Minikube (total 160 com promoção de 20%, 144 com cupom de 10%). Pendências: pedido no Order falha (502, o Order chama `/api/cesta` e o Cart expõe `/api/cart`; dono Rodrigo) e o Cart não degrada com o promotion fora (504, `fetch` sem timeout; dono shopping-cart). O consumo do cupom segue sem chamador (Order) | Sim, para integração final |
-| INT-006 | Autenticação interna | Cart, Order e Promotion | Parcial — Cart envia `x-internal-secret` ao Promotion (23/10); Order ainda não chama; valor idêntico não conferido em execução | Não |
+| INT-002 | Cotação final do carrinho | Cart, Product, Promotion e Order | Cart chama `calculate` desde 23/10 (`82dbbfb`, `2bf1dfa`). O Product expõe `price` e `stock` desde 24/10 (product#9 fechada, `fb7b26b`); Cart → Product → Promotion rodado em 25/10 no Minikube (total 160 com promoção de 20%, 144 com cupom de 10%). Resolvido desde 25/10: o 502 do pedido (order#18, PR #19, 27/10) e o timeout do Cart (cart#12, `c81e6e5`, 28/10). O consumo do cupom passa pelo `OrderConfirmed` na fila (order#21, PR #78), mas o evento sai com `coupon_code=null` porque o Cart não persiste uma cotação autoritativa (order#12, 29/10). Execução conjunta no EKS pendente | Sim, para integração final |
+| INT-006 | Autenticação interna | Cart, Order e Promotion | Parcial — Cart envia `x-internal-secret` ao Promotion (23/10); o Order não chama o REST, publica `OrderConfirmed` na fila (order#21); valor idêntico não conferido em execução | Não |
 | PROMO-001 | Consumo de `OrderConfirmed` via RabbitMQ | Order e Promotion | Contrato aceito em 25/10; implementação pendente | Sim para RabbitMQ |
 | INT-009 | Porta errada do Product nos consumidores | Order, Cart, Product | Cart resolvido em 23/10 (`2017c3b`, aponta para `product-api:8000`). Product confirmou a porta em 24/10 (product#8, `330bb05`). Order resolvido em 25/10 (order#11 fechada, `11a3e4f`) | Não — resolvido nos três e rodado em 25/10 (cart e product pelo nome `product-api:8000`) |
 | INT-010 | `shopping-cart` sem `.env.example` no repo | Cart | Resolvido (23/10, `d09fa67`) | Não |
 | PROMO-003 | Ingress expunha `/internal` | Promotion | Resolvido (18/10) — allowlist `/api` + `/docs` | Não |
-| PROMO-004 | Observabilidade (`/metrics`, Prometheus, Grafana) | Todos | Promotion, API Gateway, Cart, Product, vector-db e embedding-reranking expõem `/metrics`; faltam Order, Authorization, Client, llm-provider e Support | Sim, para R2 da N2 |
-| PROMO-005 | Helm (aula 27/10) | Todos | Promotion, Product, vector-db e embedding-reranking têm chart; faltam os demais | Sim, para R2 da N2 |
+| PROMO-004 | Observabilidade (`/metrics`, Prometheus, Grafana) | Todos | Os 11 serviços expõem `/metrics` (25/10); dashboards em JSON em todos (promotion #47 e gateway #12 fechadas, 28/10) | Não, falta só rodar no EKS |
+| PROMO-005 | Helm (aula 27/10) | Todos | Os 11 repos têm chart (cart#5 `dbcd1a6`, gateway PR #37, 28/10); cart testado em Minikube limpo | Não |
 | PROMO-002 | Validar JWT RS256 ponta a ponta | Authorization, Order, Cart, Promotion | Executado em 21/10 com a chave de lab (todos os itens, Promotion incluído); falta repetir com a chave oficial do Eduardo | Não — mas fecha de vez o risco de INT-001 |
 | INT-011 | `POST /api/pedidos` devolve 500 (validação de record no .NET 10) | Order | Confirmado em Compose e Minikube (21/10) | Sim — nenhum pedido é criado |
 | INT-012 | `POST /products` leva ~15 s e o gateway corta em 10 s | Product, Gateway | Resolvido nos dois lados: gateway com timeout de 30 s só nessa rota (21/10) e Product respondendo 201 antes do pipeline de LLM e indexação, que roda em segundo plano (product#10, `c134557`, 24/10). Não rodado em execução | Não |
@@ -59,7 +59,7 @@ N1.
 Observabilidade (Prometheus/métricas): expõem `/metrics` o `promotion` (18/10), o `api-gateway` (porta 9100) e o
 `shopping-cart` (23/10, `37f8945`); em 24/10 entraram `product`, `vector-db` e `embedding-reranking` (commits diretos na `main`, issues #2 de cada um fechadas). Em 25/10 entraram `order`, `authorization`, `client`, `llm-provider` e `support`: os 9 repos que não são nossos expõem `/metrics`. O Plano de Ensino (aula 11, 03/11) cobra Prometheus
 e Grafana na N2, e Helm (aula 10, 27/10): ambos entram no R2 (3,0). Têm chart Helm o `promotion` (instalado no
-Minikube em 21/10) e, desde 24/10 e 25/10, todos os outros repos exceto o `shopping-cart` (cart#5) e o `api-gateway` (#11), ainda não instalados por nós; dashboards em JSON existem em todos os repos menos o `promotion` (#47) e o dashboard da solução (gateway#12).
+Minikube em 21/10) e, desde 24/10 e 25/10, todos os outros repos, incluindo `shopping-cart` (cart#5, 28/10) e `api-gateway` (PR #37, 28/10); dashboards em JSON existem em todos, inclusive o `promotion` (#47) e o da solução (gateway#12).
 
 ## 4. Pendências detalhadas
 
@@ -191,7 +191,9 @@ O consumidor deve gravar `order_id` único na mesma transação MySQL que increm
 
 ### INT-009 — Order e Cart apontam pra porta errada do Product
 
-**Situação atual, confirmada lendo os três repos:** `order/.env.example` e
+**Resolvido nos três (Cart 23/10, Order 25/10; `.env.example` de ambos em `:8000`, conferido em 02/11).** O texto abaixo é o histórico, na ordem em que foi escrito.
+
+**Situação original, confirmada lendo os três repos:** `order/.env.example` e
 `shopping-cart/.env.example` têm o mesmo default —
 `PRODUCT_SERVICE_URL=http://host.docker.internal:3002` — mas `product/docker-compose.yml`
 publica o serviço em `8000:8000`, não em `3002`. Nenhum dos dois arquivos foi atualizado depois
@@ -305,8 +307,8 @@ completo e atual de issues está em [issues-entrega-final.md](issues-entrega-fin
 
 | Repo | Dono | Gaps |
 | --- | --- | --- |
-| `order` | Rodrigo | sem Ingress por decisão do grupo; contrato `OrderConfirmed` aceito, publisher/outbox pendente (PROMO-001); demais itens acompanhados nas issues do Order |
-| `shopping-cart` | João Liz | entregues no `main` em 23/10: CI, `.env.example`, `/metrics`, porta do Product, imagem multi-arch e chamada ao Promotion (INT-002). Faltam Helm (cart#5), dashboard (cart#6, parcial) e o preço vindo do Product (cart#11) |
+| `order` | Rodrigo | sem Ingress por decisão do grupo; publisher `OrderConfirmed` e `OrderCreated` por outbox entregues (order#21, PR #22; 29/10), falta E2E no EKS (order#12); demais itens acompanhados nas issues do Order |
+| `shopping-cart` | João Liz | entregues no `main` em 23/10: CI, `.env.example`, `/metrics`, porta do Product, imagem multi-arch e chamada ao Promotion (INT-002). Helm (cart#5), dashboard (cart#6) e preço vindo do Product (cart#11) entregues até 28/10 |
 | `authorization` | Eduardo | entregue em 25/10 (PR #11): CI, `/metrics`, Helm, Grafana, imagem `1.2.1` multi-arch, senhas fora do manifest. Falta a chave e o usuário oficiais para o PROMO-002 (authorization#8) |
 | `client` | Eduardo | entregue em 25/10 (PR #9): CI, `/metrics`, Helm, Grafana, imagem `1.2.0` multi-arch |
 | `product` | João Correa | entregue no `main` em 24/10: `/metrics`, porta 8000 confirmada, preço e estoque, `POST /products` assíncrono, Helm, Grafana, imagem `1.1.0` multi-arch, Ingress sem `/internal` nem `/metrics`. Falta só o ensaio (#6) e fechar a mãe (#1) |

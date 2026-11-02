@@ -30,8 +30,8 @@ Fonte: manifests em `k8s/` de cada `main`, `gh run list` e a API do Docker Hub.
 | `promotion` (Lucas) | verde | sim (negócio e HTTP) | `bascratki/promotion:1.2.0`, amd64 e arm64 (27/10, consumer RabbitMQ e `X-Served-By`) | chart instalado no Minikube em 21/10 (1 réplica) | falta | Ingress só com `/api` e `/docs` |
 | `api-gateway` (Lucas) | verde | sim (porta 9100) | `bascratki/api-gateway:1.0.0`, amd64 e arm64 (21/10) | falta | falta | testado no Minikube e com token real em 21/10 |
 | `support` (Eduardo) | verde | sim (25/10) | `eduardofabri/support:1.0.2`, amd64 e arm64 | chart (25/10) | JSON (25/10) | implementação em Java mergeada (PR #19, #20); manifest em `1.0.2` (conferido em 26/10); consumidor RabbitMQ testado com broker real, mas o publisher do Order ainda é HTTP (#11 reaberta); evidência Order → Support → Mailpit em `support/docs/evidence/2026-10-25/` |
-| `order` (Rodrigo) | verde | sim (25/10) | `ghcr.io/back-end-cloud-computing/order:latest` multi-arch (25/10) | `helm/order` (25/10) | JSON (25/10) | sem Ingress por decisão do grupo (order#9); `product-api:8000` (order#11); `POST /api/pedidos` com Cart e Product reais ainda dá 502 (order#18, rotas `/api/cesta` e `/internal/produtos/...` diferentes das expostas); com fixtures de Cart e Product o pedido deu 201 (evidência do Rodrigo, 25/10); publisher RabbitMQ desligado até o Cart enviar o cupom |
-| `shopping-cart` (João Liz) | verde (23/10) | sim (23/10) | `jcliz/shopping-cart:1.1.0`, amd64 e arm64 (23/10) | falta (cart#5) | parcial (cart#6) | `.env.example` voltou; aponta para `product-api:8000` e chama o `promotion`; preço vem do Product, que o expõe desde 24/10 (product#9); falta rodar o fluxo |
+| `order` (Rodrigo) | verde | sim (25/10) | `ghcr.io/back-end-cloud-computing/order:latest` multi-arch (25/10) | `helm/order` (25/10) | JSON (25/10) | sem Ingress por decisão do grupo (order#9); `product-api:8000` (order#11); rotas alinhadas ao Cart e ao Product (order#18, PR #19, 27/10); publisher `OrderConfirmed` (PR #21) e `OrderCreated` (PR #22) por outbox/RabbitMQ, `coupon_code=null` até o Cart persistir a cotação; falta o E2E com Cart e Product reais no EKS (order#12) |
+| `shopping-cart` (João Liz) | verde (23/10) | sim (23/10) | `jcliz/shopping-cart:1.1.0`, amd64 e arm64 (23/10) | chart (28/10) | JSON com print (28/10) | `.env.example` voltou; aponta para `product-api:8000` e chama o `promotion` com timeout (cart#12); falta rodar o fluxo no EKS |
 | `authorization` (Eduardo) | verde (25/10) | sim (25/10) | `eduardofabri/authorization:1.2.1`, amd64 e arm64 | chart (25/10) | JSON (25/10) | senhas do banco e do admin saíram do manifest (PR #11); falta a chave e o usuário oficiais para o PROMO-002 (authorization#8) |
 | `client` (Eduardo) | verde (25/10) | sim (25/10) | `eduardofabri/client:1.2.0`, amd64 e arm64 | chart (25/10) | JSON (25/10) | senha do Postgres saiu do manifest (PR #9) |
 | `product` (João Correa) | verde | sim (24/10) | `joao2006/product:1.1.0`, amd64 e arm64 (24/10) | chart em `helm/product` (24/10) | `grafana/product-dashboard.json` (24/10) | Service `product-api:8000` confirmado; expõe `price` e `stock`; `POST /products` responde antes do pipeline de LLM |
@@ -42,10 +42,10 @@ Fonte: manifests em `k8s/` de cada `main`, `gh run list` e a API do Docker Hub.
 Achados que atravessam repositórios:
 
 - **Arquitetura mista de imagem.** Resolvida em 25/10 nas tags publicadas: as do Eduardo (`authorization:1.2.1`, `client:1.2.0`, `support:1.0.2`) e as do João Correa (`1.1.0`) têm `linux/amd64` e `linux/arm64` no Docker Hub, conferido pela API. A do `order` está no GHCR e o Rodrigo declara multi-arch (order#5); não conferi. Falta alinhar os manifests: `support/k8s/support.yaml` ainda usa `1.0.1`.
-- **Nome do Service do Product (INT-009).** O Service se chama `product-api` (`product/k8s/product.yaml`), mas `order/k8s/order.yaml` ainda usa `http://product:8000` (order#11); no cluster esse nome não resolve. O gateway e o `shopping-cart` (23/10) já usam `product-api`.
+- **Nome do Service do Product (INT-009).** O Service se chama `product-api` (`product/k8s/product.yaml`), e o `order` passou a usar `product-api:8000` (order#11, 25/10). Resolvido nos três consumidores.
 - **Compose dos serviços de IA e do Product.** Corrigido em 24/10 em `product`, `vector-db` e `embedding-reranking` (compose autônomo, a partir de um clone isolado; não rodei). Falta o `llm-provider` (#7).
-- **Quem chama o `promotion`** (INT-002): o Cart chama `calculate` desde 23/10 e a cotação com desconto foi rodada em 25/10 (160 sem cupom, 144 com cupom de 10%). O consumer RabbitMQ do `promotion` existe desde 27/10 (#51, PR #78); falta o publisher no Order (order#20), e o Order ainda não recebe `coupon_code` de uma cotação do Cart. O contrato `OrderConfirmed` está aceito (promotion#69).
-- **Degradação** (shopping-cart#12): sem timeout no `fetch` do Cart, com o `promotion` fora o resultado não é determinístico (um 504, três 200 sem desconto em 25/10).
+- **Quem chama o `promotion`** (INT-002): o Cart chama `calculate` desde 23/10 e a cotação com desconto foi rodada em 25/10 (160 sem cupom, 144 com cupom de 10%). O consumer RabbitMQ do `promotion` existe desde 27/10 (#51, PR #78); o publisher no Order existe (order#20, PR #21), mas o evento sai com `coupon_code=null`: o Cart não persiste uma cotação autoritativa (order#12). O contrato `OrderConfirmed` está aceito (promotion#69).
+- **Degradação** (shopping-cart#12): resolvida em 28/10 (`c81e6e5`, timeout no `fetch`). Não rodado depois do ajuste.
 
 ## 3. Issues do `promotion` e do `api-gateway`
 
@@ -99,6 +99,19 @@ Conferido com `ganjj-check --all` (janela de 25/10 16:22Z a 26/10 12:48Z), sem d
 | Nosso, pendente | `promotion` #51 (consumer RabbitMQ), #49 (chave oficial do Eduardo), #47 (dashboard), #52 (depende de order#18 e shopping-cart#12) |
 | Depende das aulas | Helm de todos os serviços (27/10), Prometheus e Grafana (03/11) |
 | Ensaio | `promotion` #54, `api-gateway` #14, order#8 e support#14 (até 07/11) |
+
+### Estado em 02/11/2026
+
+Conferido com `ganjj-check --all` (janela de 26/10 12:48Z a 02/11 16:05Z).
+
+| Estado | Itens |
+|---|---|
+| Entregue na janela | Helm em todos os serviços (cart#5, gateway PR #37); dashboards JSON (promotion #47, gateway #12); consumer RabbitMQ do `promotion` (#51); publisher `OrderConfirmed` (order#21) e `OrderCreated` (support PR #22); rotas do Cart e do Product alinhadas (order#18, PR #19); timeout do Cart (cart#12); chave pública e login ADMIN do `authorization` (authorization#8) |
+| Desbloqueado, nosso | `promotion` #49 e `api-gateway` #13 (checklists PROMO-002 e GW-002 com as credenciais do Eduardo) |
+| Bloqueado por decisão | `promotion` #52: o Cart não persiste a cotação, então `coupon_code=null` no evento (order#12) |
+| Pendente | E2E no EKS (order#12); README e docs de RabbitMQ do `support` (#22); revisão de authorization PR #13 e support PR #24 |
+| Ensaio | `promotion` #54, `api-gateway` #14, order#8, support#14, authorization#7 (até 07/11); shopping-cart#7 foi fechada em 28/10 sem registro do ensaio |
+| Processo | shopping-cart: 5 commits direto na `main` (28/10), sem PR |
 
 Em 24/10 João Correa fechou product#9 e #10 e vector-db#8 e #9 (commits diretos na `main`, sem PR); esses bloqueadores caíram. Desde 23/10 esses bloqueios também estão como dependência formal do GitHub (`blocked by`, 17 vínculos entre os repos): o cartão da issue mostra "Blocked", mas o GitHub não impede fechá-la.
 
