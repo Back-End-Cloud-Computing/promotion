@@ -109,6 +109,7 @@ Conferido com `ganjj-check --all` (janela de 26/10 12:48Z a 02/11 16:05Z).
 | Entregue na janela | Helm em todos os serviços (cart#5, gateway PR #37); dashboards JSON (promotion #47, gateway #12); consumer RabbitMQ do `promotion` (#51); publisher `OrderConfirmed` (order#21) e `OrderCreated` (support PR #22); rotas do Cart e do Product alinhadas (order#18, PR #19); timeout do Cart (cart#12); chave pública e login ADMIN do `authorization` (authorization#8) |
 | Desbloqueado, nosso | `promotion` #49 e `api-gateway` #13 (checklists PROMO-002 e GW-002 com as credenciais do Eduardo) |
 | Bloqueado por decisão | `promotion` #52: o Cart não persiste a cotação, então `coupon_code=null` no evento (order#12) |
+| Rodado no EKS em 02/11 | pedido pelo gateway 201 e idempotente, e-mail único no Mailpit, `OrderConfirmed` consumido (`no_coupon`), filas e DLQs zeradas; ver [evidência](evidencias/e2e-eks-2026-11-02.md) |
 | Pendente | E2E no EKS (order#12); README e docs de RabbitMQ do `support` (#22); revisão de authorization PR #13 e support PR #24 |
 | Ensaio | `promotion` #54, `api-gateway` #14, order#8, support#14, authorization#7 (até 07/11); shopping-cart#7 foi fechada em 28/10 sem registro do ensaio |
 | Processo | shopping-cart: 5 commits direto na `main` (28/10), sem PR |
