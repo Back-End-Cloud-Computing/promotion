@@ -27,7 +27,7 @@ coisa. IDs `PROMO-*` são específicos deste serviço.
 | PROMO-003 | Ingress expunha `/internal` | Promotion | Resolvido (18/10) — allowlist `/api` + `/docs` | Não |
 | PROMO-004 | Observabilidade (`/metrics`, Prometheus, Grafana) | Todos | Os 11 serviços expõem `/metrics` (25/10); dashboards em JSON em todos (promotion #47 e gateway #12 fechadas, 28/10) | Não, falta só rodar no EKS |
 | PROMO-005 | Helm (aula 27/10) | Todos | Os 11 repos têm chart (cart#5 `dbcd1a6`, gateway PR #37, 28/10); cart testado em Minikube limpo | Não |
-| PROMO-002 | Validar JWT RS256 ponta a ponta | Authorization, Order, Cart, Promotion | Executado em 21/10 com a chave de lab (todos os itens, Promotion incluído); falta repetir com a chave oficial do Eduardo | Não — mas fecha de vez o risco de INT-001 |
+| PROMO-002 | Validar JWT RS256 ponta a ponta | Authorization, Order, Cart, Promotion | Executado em 21/10 com a chave de lab (todos os itens, Promotion incluído); repetido em 02/11 no EKS com o `authorization` do cluster (ver [evidência](evidencias/jwt-eks-2026-11-02.md)); `role=CLIENTE` 403 e chave vazia 500 só rodados em 21/10 | Não — risco de INT-001 fechado |
 | INT-011 | `POST /api/pedidos` devolve 500 (validação de record no .NET 10) | Order | Confirmado em Compose e Minikube (21/10) | Sim — nenhum pedido é criado |
 | INT-012 | `POST /products` leva ~15 s e o gateway corta em 10 s | Product, Gateway | Resolvido nos dois lados: gateway com timeout de 30 s só nessa rota (21/10) e Product respondendo 201 antes do pipeline de LLM e indexação, que roda em segundo plano (product#10, `c134557`, 24/10). Não rodado em execução | Não |
 | INT-013 | `product_id` inteiro no promotion, id string no Product | Promotion, Product | Resolvido no Promotion em 21/10 (`fe1328c`): aceita string, inteiro continua aceito. O Cart já envia string | Não |
@@ -112,7 +112,7 @@ foi refeito em 21/10 (execução abaixo).
 - [x] Exercitar os casos de erro: `JWT_PUBLIC_KEY` vazia → 500; token expirado → 401; assinatura
       inválida → 401; formato inválido → 401.
 
-**Execução de 21/10/2026 (chave de lab):** rodado contra o `authorization` local, subido do clone com um par de chaves gerado por `scripts/generate-keys.sh`. Falta repetir só com a chave e o usuário oficiais do Eduardo, o que troca `JWT_PUBLIC_KEY` e não muda código.
+**Execução de 21/10/2026 (chave de lab):** rodado contra o `authorization` local, subido do clone com um par de chaves gerado por `scripts/generate-keys.sh`. Repetido em 02/11 no EKS, com o ADMIN e a chave do `authorization` do cluster: mesmos resultados, exceto `role=CLIENTE` e chave vazia, não reexecutados ([evidência](evidencias/jwt-eks-2026-11-02.md)). Achado: o `JWT_PUBLIC_KEY` do `promotion` no cluster era a chave de exemplo do `k8s/configmap.yaml` e causava 401.
 
 Resultados em `GET /api/campaigns`: admin 200; sem token 401; role CLIENTE 403; refresh token como bearer 401; token expirado 401; `iss` errado 401; assinatura adulterada ou de outra chave 401; formato inválido 401; `JWT_PUBLIC_KEY` vazia 500.
 
@@ -282,8 +282,8 @@ serviço.
       (INT-001) — os dois já migraram pra RS256, falta só validar ponta a ponta.
 - [x] Rodar o teste ponta a ponta do JWT RS256 com token real do authorization (PROMO-002) — 21/10,
       com a chave de lab.
-- [ ] Repetir o PROMO-002 com a chave pública e o usuário oficiais do Eduardo (authorization#8,
-      promotion#49).
+- [x] Repetir o PROMO-002 com a chave pública e o usuário oficiais (authorization#8, promotion#49) — 02/11, no EKS
+      com o ADMIN e a chave do próprio `authorization` do cluster; ver [jwt-eks-2026-11-02.md](evidencias/jwt-eks-2026-11-02.md).
 - [x] Corrigir o Ingress do promotion pra excluir /internal do acesso externo (PROMO-003) — 18/10.
 - [ ] Confirmar quem chama `/internal/discounts/calculate` e `/internal/coupons/{code}/consume`
       (INT-002) — `calculate`: o Cart, desde 23/10 (ainda não rodado em execução); `consume`: ninguém.

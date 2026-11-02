@@ -77,7 +77,7 @@ sobrado. A evidência do EKS é daquele cluster, então o ensaio precisa recriá
 - [ ] `php artisan db:seed --force` no promotion depois do deploy: os bancos estão em `emptyDir` e o cupom `BEMVINDO10` some a cada recriação de pod.
 - [ ] Perguntar ao professor sobre 9 x 10 pontos.
 - [ ] Ensaio com o grupo no EKS, com tempo por pessoa ([promotion#54](https://github.com/Back-End-Cloud-Computing/promotion/issues/54), [api-gateway#14](https://github.com/Back-End-Cloud-Computing/api-gateway/issues/14)).
-- [ ] JWT com token real, extra fora da nota ([promotion#49](https://github.com/Back-End-Cloud-Computing/promotion/issues/49), [api-gateway#13](https://github.com/Back-End-Cloud-Computing/api-gateway/issues/13)): depende do Eduardo.
+- [x] JWT com token real, extra fora da nota ([promotion#49](https://github.com/Back-End-Cloud-Computing/promotion/issues/49), [api-gateway#13](https://github.com/Back-End-Cloud-Computing/api-gateway/issues/13)): rodado no EKS em 02/11, ver [evidência](evidencias/jwt-eks-2026-11-02.md).
 - [ ] Cotação do carrinho e consumo no pedido ([promotion#52](https://github.com/Back-End-Cloud-Computing/promotion/issues/52)): destravada em parte pelo order#20, mas esbarra no `coupon_code` nulo.
 
 **Rodrigo (Order)**
@@ -89,7 +89,7 @@ sobrado. A evidência do EKS é daquele cluster, então o ensaio precisa recriá
 **Eduardo (Support, Authorization, Client)**
 
 - [ ] Ensaio ([support#14](https://github.com/Back-End-Cloud-Computing/support/issues/14)).
-- [ ] Token real do Authorization para o teste do JWT (ver acima).
+- [x] Token real do Authorization para o teste do JWT: usar o ADMIN do Secret `authorization-credentials` do cluster (ver acima).
 - [ ] Opcional: ligar o Support também em `order.confirmed` ([support#12](https://github.com/Back-End-Cloud-Computing/support/issues/12) é SMS e WhatsApp reais, extra).
 
 **Todos**
