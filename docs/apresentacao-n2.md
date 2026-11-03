@@ -20,7 +20,7 @@ solução rodando no **Amazon EKS**; cada integrante apresenta o próprio servi�
 | 8 | Idempotência | republicar a mesma mensagem: log `duplicate`, `usage_count` não muda | R3 |
 | 9 | Autorrecuperação (extra) | `kubectl delete pod <um>` e `get pods -w` | R2 |
 
-O publisher do Order está mergeado ([order#21](https://github.com/Back-End-Cloud-Computing/order/pull/21)), mas publica `coupon_code` nulo: o Promotion consome e dá ack sem incrementar cupom. Por isso o item 7 mostra a publicação real do Order na fila e, para o `usage_count` subir, publica `OrderConfirmed` com cupom por AMQP de dentro do pod do `promotion-consumer`, como na [evidência de 27/10](evidencias/eks-2026-10-27.md). Dizer isso na apresentação: publicação, consumo e processamento existem, mas o Order ainda não leva o cupom na mensagem. Desde 03/11 o Cart guarda o cupom e cota com ele (`edc549e`, [shopping-cart#13](https://github.com/Back-End-Cloud-Computing/shopping-cart/issues/13)); falta o Order ler o campo `coupon` do carrinho e preencher `coupon_code` ([order#12](https://github.com/Back-End-Cloud-Computing/order/issues/12)). Não há painel do
+Desde 03/11 o Cart guarda o cupom e cota com ele (`edc549e`, [shopping-cart#13](https://github.com/Back-End-Cloud-Computing/shopping-cart/issues/13)) e o Order lê o campo `coupon` de `GET /api/cart` e preenche `coupon_code` no `OrderConfirmed` ([order#25](https://github.com/Back-End-Cloud-Computing/order/pull/25), `d2bf0ef`). O Promotion consumiu o pedido com `outcome=consumed` no Minikube ([evidência do Order](https://github.com/Back-End-Cloud-Computing/order/blob/main/docs/evidence/2026-11-03-order-coupon-e2e-minikube.md)). Isso ainda não foi rodado no EKS: se o ensaio não fechar, o item 7 publica `OrderConfirmed` com cupom por AMQP de dentro do pod do `promotion-consumer`, como na [evidência de 27/10](evidencias/eks-2026-10-27.md), e a banca é avisada. Não há painel do
 RabbitMQ: a imagem do support (`rabbitmq:4.1-alpine`) não traz o plugin de management.
 
 ## Decisões para defender
@@ -60,7 +60,7 @@ RabbitMQ: a imagem do support (`rabbitmq:4.1-alpine`) não traz o plugin de mana
 - [x] Consumer RabbitMQ testado com broker e MySQL reais (27/10).
 - [x] Cluster no EKS com os 11 serviços (api-gateway#30), 23 pods prontos, Ingress, balanceamento e consumo do
   `OrderConfirmed` rodados em 27/10 ([evidência](evidencias/eks-2026-10-27.md)). Gateway em `bascratki/api-gateway:1.1.1`, rodado no EKS em 28/10.
-- [x] Publisher `OrderConfirmed` no Order mergeado (order#21, 28/10). Falta rodá-lo no EKS e decidir se o `coupon_code` entra na mensagem. O Support segue em `order.created`, que o Order publica (order#22).
+- [x] Publisher `OrderConfirmed` no Order mergeado (order#21, 28/10). O `coupon_code` entra na mensagem desde order#25 (03/11); falta rodá-lo no EKS. O Support segue em `order.created`, que o Order publica (order#22).
 - [x] Cart com timeout no `fetch` do promotion (shopping-cart#12, resolvido em 28/10). Reconferir a degradação no EKS antes de demonstrá-la.
 
 ## O que falta (29/10/2026)
@@ -78,12 +78,12 @@ sobrado. A evidência do EKS é daquele cluster, então o ensaio precisa recriá
 - [ ] Perguntar ao professor sobre 9 x 10 pontos.
 - [ ] Ensaio com o grupo no EKS, com tempo por pessoa ([promotion#54](https://github.com/Back-End-Cloud-Computing/promotion/issues/54), [api-gateway#14](https://github.com/Back-End-Cloud-Computing/api-gateway/issues/14)).
 - [x] JWT com token real, extra fora da nota ([promotion#49](https://github.com/Back-End-Cloud-Computing/promotion/issues/49), [api-gateway#13](https://github.com/Back-End-Cloud-Computing/api-gateway/issues/13)): rodado no EKS em 02/11, ver [evidência](evidencias/jwt-eks-2026-11-02.md).
-- [ ] Cotação do carrinho e consumo no pedido ([promotion#52](https://github.com/Back-End-Cloud-Computing/promotion/issues/52)): o Cart passou a persistir o cupom em 03/11 (shopping-cart#13, imagem `1.1.1`); falta o Order enviar `coupon_code` e rodar o E2E no EKS.
+- [ ] Cotação do carrinho e consumo no pedido ([promotion#52](https://github.com/Back-End-Cloud-Computing/promotion/issues/52)): o Cart persiste o cupom (shopping-cart#13, imagem `1.1.1`) e o Order envia `coupon_code` (order#25), provado no Minikube em 03/11; falta rodar o E2E com cupom no EKS.
 
 **Rodrigo (Order)**
 
-- [ ] Ler o campo `coupon` de `GET /api/cart` e levá-lo em `coupon_code` na mensagem `OrderConfirmed`. Sem isso o `usage_count` só sobe com mensagem manual. O lado do Cart está entregue desde 03/11 (shopping-cart#13).
-- [ ] Rodar o publisher no cluster compartilhado e fechar o E2E pelo gateway ([order#12](https://github.com/Back-End-Cloud-Computing/order/issues/12)).
+- [x] Ler o campo `coupon` de `GET /api/cart` e levá-lo em `coupon_code` na mensagem `OrderConfirmed` (order#25, 03/11).
+- [ ] Rodar o publisher no EKS e repetir o E2E com cupom pelo gateway (order#12 fechou com a prova no Minikube).
 - [ ] Ensaio ([order#8](https://github.com/Back-End-Cloud-Computing/order/issues/8)) e readiness ([order#1](https://github.com/Back-End-Cloud-Computing/order/issues/1)).
 
 **Eduardo (Support, Authorization, Client)**
@@ -97,4 +97,4 @@ sobrado. A evidência do EKS é daquele cluster, então o ensaio precisa recriá
 - [ ] Imagem amd64 pública de cada serviço, conferida pelo `apply.sh` no cluster novo (pod `Running`, não `ImagePullBackOff`).
 - [ ] Trabalhar por PR: o shopping-cart teve 5 commits direto na `main` e issues fechadas sem commit referenciando.
 
-**Se não fechar até 10/11:** apresentar o RabbitMQ com a mensagem publicada por AMQP e dizer que o Order ainda não leva o cupom. O roteiro acima já prevê isso. O ensaio no EKS é o único item que não dá para pular.
+**Se não fechar até 10/11:** apresentar o RabbitMQ com a mensagem publicada por AMQP e dizer que o cupom foi provado no Minikube e não no EKS. O roteiro acima já prevê isso. O ensaio no EKS é o único item que não dá para pular.

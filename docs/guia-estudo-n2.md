@@ -142,23 +142,21 @@ Antes do dia: um ensaio completo com o hospedeiro, cronometrado, e o cluster sub
 **Estado em 03/11.** O Cart já persiste o cupom (shopping-cart#13, `edc549e`, imagem `1.1.1`): `PUT` e `DELETE
 /api/cart/coupon` guardam o cupom em `cart:{user}:coupon` depois que o promotion o aceita, e `GET /api/cart` sempre cota
 com ele. O desconto é distribuído nas unidades, então `discounted_price × quantity` soma o total que o Order cobra.
-Falta o Order ler o campo `coupon` do carrinho e preencher `coupon_code` (order#12, com o Rodrigo). Os pontos 2 a 4
-abaixo valem até isso entrar; o E2E com a `1.1.1` ainda não foi rodado no EKS.
+O Order passou a ler o campo `coupon` e a preencher `coupon_code` (order#25, `d2bf0ef`, 03/11) e order#12 fechou com E2E no
+Minikube (`outcome=consumed`). Os pontos 2 a 4 abaixo descrevem o estado até 02/11; o E2E com cupom ainda não foi rodado no EKS.
 
 Até 02/11 o cupom se perdia em quatro pontos, nesta ordem:
 
 1. **Carrinho (resolvido em 03/11):** o cupom existia só como `?coupon=` em `getCart`; nada era gravado, e o hash Redis
    `cart:{user}` guardava só itens.
-2. **Order lendo o carrinho (pendente):** `CartClient.cs:18` faz `GET /api/cart` sem `?coupon`, e `CartSnapshot` não tem campo de cupom.
-3. **Evento:** `CreateOrderHandler.cs:96` passa `null` como `CouponCode` em `OrderConfirmedEvent`, que sai com
-   `coupon_code: null`.
-4. **Consumidor:** `OrderConfirmedHandler.php:63-64` devolve `NO_COUPON`, grava `processed_orders` com
-   `outcome=no_coupon` e dá ack. O `usage_count` não sobe.
+2. **Order lendo o carrinho (resolvido em 03/11):** `CartClient` lia só `items`; agora lê `coupon` e `CartSnapshot` tem `CouponCode`.
+3. **Evento (resolvido em 03/11):** `CreateOrderHandler` passava `null` como `CouponCode`; agora passa `cart.CouponCode`.
+4. **Consumidor:** `OrderConfirmedHandler.php:63-64` devolve `NO_COUPON` quando o evento vem sem cupom (E2E de 02/11, `outcome=no_coupon`); com cupom, `outcome=consumed` e o `usage_count` sobe (Minikube, 03/11).
 
 Também: `POST /internal/coupons/{code}/consume` existe e é testado, mas ninguém o chama; o contrato alvo com `quote_id` do
 `INTEGRATION-CONTRACTS.md` não foi implementado. O runbook do Order manda **não** apresentar uma mensagem AMQP manual com
-cupom como se viesse do Order. Dizer a verdade na banca: publicação, consumo e processamento existem e funcionam; o
-cupom já fica guardado no Cart, mas só chega ao evento quando o Order o ler.
+cupom como se viesse do Order, a menos que o E2E do EKS tenha sido rodado. Dizer a verdade na banca: o cupom vai do Cart
+ao evento e foi consumido no Minikube; no EKS isso só vale depois do ensaio.
 
 ## 6. Fluxo integrado para mostrar (R3)
 

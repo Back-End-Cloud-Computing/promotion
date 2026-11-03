@@ -307,7 +307,7 @@ completo e atual de issues está em [issues-entrega-final.md](issues-entrega-fin
 
 | Repo | Dono | Gaps |
 | --- | --- | --- |
-| `order` | Rodrigo | sem Ingress por decisão do grupo; publisher `OrderConfirmed` e `OrderCreated` por outbox entregues (order#21, PR #22; 29/10), falta E2E no EKS (order#12); demais itens acompanhados nas issues do Order |
+| `order` | Rodrigo | sem Ingress por decisão do grupo; publisher `OrderConfirmed` e `OrderCreated` por outbox entregues (order#21, PR #22; 29/10), `coupon_code` do carrinho no evento (order#25, 03/11), E2E com cupom provado no Minikube e falta o EKS; demais itens acompanhados nas issues do Order |
 | `shopping-cart` | João Liz | entregues no `main` em 23/10: CI, `.env.example`, `/metrics`, porta do Product, imagem multi-arch e chamada ao Promotion (INT-002). Helm (cart#5), dashboard (cart#6) e preço vindo do Product (cart#11) entregues até 28/10 |
 | `authorization` | Eduardo | entregue em 25/10 (PR #11): CI, `/metrics`, Helm, Grafana, imagem `1.2.1` multi-arch, senhas fora do manifest. Falta a chave e o usuário oficiais para o PROMO-002 (authorization#8) |
 | `client` | Eduardo | entregue em 25/10 (PR #9): CI, `/metrics`, Helm, Grafana, imagem `1.2.0` multi-arch |
