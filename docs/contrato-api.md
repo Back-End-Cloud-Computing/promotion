@@ -2,7 +2,7 @@
 
 Referência para quem vai **consumir** este serviço: Carrinho, Pedido e o API Gateway.
 
-A fonte de verdade em runtime é a spec OpenAPI gerada a partir do código (`/docs/api` e `/docs/api.json`).
+A fonte de verdade em runtime é a spec OpenAPI gerada a partir do código (`/docs/api` e `/docs/api.json`). A spec lista os paths completos: `/api/*` pelo gateway e `/internal/*` (chamadas do Cart e do Order, com `x-internal-secret`).
 Este documento existe para leitura humana e para permitir que os colegas integrem antes de o serviço estar no
 ar.
 
