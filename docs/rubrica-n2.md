@@ -35,9 +35,11 @@ Regras importantes (texto do Canvas, resumido):
 |---|---|---|---|
 | **R1** | 3 pts: cada integrante com um microsserviço funcional; duas linguagens e dois bancos, persistência independente | 1,5 pts | 0 |
 | **R2** | 4 pts: implantado no Amazon EKS, com Docker, Services, Service Discovery, Ingress e balanceamento entre réplicas | 2 pts | 0 |
-| **R3** | 2 pts: integração por REST e RabbitMQ, com publicação, consumo e processamento de mensagens | 1 pt | 0 |
+| **R3** | 3 pts: integração por REST e RabbitMQ, com publicação, consumo e processamento de mensagens | a confirmar (era 1 pt com R3 em 2) | 0 |
 
-Os critérios somam 9, mas a tarefa vale 10. Pergunta em aberto para o professor.
+Os critérios somam 10. O Canvas de 27/10 trazia R3 com 2 pts (soma 9); o aviso do professor de 04/11
+([`infra-eks.md`](infra-eks.md)) fixa R3 em 3,0. Na apresentação são 5 minutos por equipe, sem PowerPoint, e a infra
+tem de estar pronta antes do slot.
 
 Helm, Prometheus, Grafana e JWT **não aparecem** na rubrica. Continuam no projeto como extra (`origem: nossa`).
 

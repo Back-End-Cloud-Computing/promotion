@@ -4,7 +4,7 @@ Material para o Lucas estudar o projeto inteiro (11 repos), cruzar com a rubrica
 pode perguntar e como mostrar cada ponto. Baseado em leitura do código e dos docs em 03/11/2026. O que não foi
 rodado no EKS vem marcado como **não testado**. Nenhuma senha, token ou chave aparece aqui.
 
-Rubrica ([`rubrica-n2.md`](rubrica-n2.md)): **R1** 3 pts, **R2** 4 pts, **R3** 2 pts (somam 9, a tarefa vale 10).
+Rubrica ([`rubrica-n2.md`](rubrica-n2.md)): **R1** 3 pts, **R2** 4 pts, **R3** 3 pts (somam 10; aviso do professor de 04/11). Slot de 5 min, sem PowerPoint: roteiro em [`infra-eks.md`](infra-eks.md).
 
 ## 1. Mapa dos serviços
 
@@ -264,7 +264,7 @@ cada réplica conta separado, então o limite efetivo é multiplicado pelas rép
 
 ## 8. Roteiro sugerido (cinco pessoas)
 
-Tempo total depende do professor; ordem que cobre as rubricas:
+Versão longa (ensaio em grupo). O roteiro de **5 minutos** do dia, com os comandos, está em [`infra-eks.md`](infra-eks.md), seção 4. Ordem que cobre as rubricas:
 
 1. Arquitetura (1 min): diagrama e tabela da seção 1. Quem fala: qualquer um.
 2. EKS e Docker (2 min): `kubectl get nodes`, `kubectl get pods -A -o wide`, `kubectl get svc`.

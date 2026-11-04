@@ -2,7 +2,7 @@
 
 Rubrica do Canvas ([`rubrica-n2.md`](rubrica-n2.md)): **R1** microsserviços, duas linguagens e dois bancos (3 pts)
 · **R2** Amazon EKS com Docker, Services, Service Discovery, Ingress e balanceamento entre réplicas (4 pts) ·
-**R3** REST e RabbitMQ com publicação, consumo e processamento (2 pts). Apresentação em equipe, em sala, com a
+**R3** REST e RabbitMQ com publicação, consumo e processamento (3 pts). Apresentação em equipe, em sala, com a
 solução rodando no **Amazon EKS**; cada integrante apresenta o próprio serviço. Este roteiro cobre a parte do
 `promotion`; a ordem final depende do grupo.
 
