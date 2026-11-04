@@ -20,7 +20,7 @@ coisa. IDs `PROMO-*` são específicos deste serviço.
 | --- | --- | --- | --- | --- |
 | INT-001 | Contrato de JWT (RS256 vs HS256) | Authorization, Order, Cart, Promotion | Resolvido — Order e Cart migraram pra RS256 | Não — falta só validar ponta a ponta com token real |
 | INT-002 | Cotação final do carrinho | Cart, Product, Promotion e Order | Cart chama `calculate` desde 23/10 (`82dbbfb`, `2bf1dfa`). O Product expõe `price` e `stock` desde 24/10 (product#9 fechada, `fb7b26b`); Cart → Product → Promotion rodado em 25/10 no Minikube (total 160 com promoção de 20%, 144 com cupom de 10%). Resolvido desde 25/10: o 502 do pedido (order#18, PR #19, 27/10) e o timeout do Cart (cart#12, `c81e6e5`, 28/10). O consumo do cupom passa pelo `OrderConfirmed` na fila (order#21, PR #78), e desde 03/11 o evento leva o `coupon_code` do carrinho: o Cart persiste o cupom e cota com ele (shopping-cart#13, `edc549e`; imagem `1.1.1`) e o Order o lê (order#25, `d2bf0ef`), provado no Minikube e no EKS (03/11) com `outcome=consumed`. Execução conjunta no EKS: feita em 03/11 | Sim, para integração final |
-| INT-006 | Autenticação interna | Cart, Order e Promotion | Parcial — Cart envia `x-internal-secret` ao Promotion (23/10); o Order não chama o REST, publica `OrderConfirmed` na fila (order#21); valor idêntico não conferido em execução | Não |
+| INT-006 | Autenticação interna | Cart, Order e Promotion | Cart envia `x-internal-secret` ao Promotion (23/10) e a cotação com cupom funcionou no EKS em 03/11 ([evidência](evidencias/e2e-eks-2026-11-03.md)), o que prova o mesmo valor nos dois; sem o header ou com valor errado o Promotion responde 403 (`AuthenticationTest.php`, no CI). O Order não chama o REST, publica `OrderConfirmed` na fila (order#21) | Não |
 | PROMO-001 | Consumo de `OrderConfirmed` via RabbitMQ | Order e Promotion | Contrato aceito em 25/10; implementação pendente | Sim para RabbitMQ |
 | INT-009 | Porta errada do Product nos consumidores | Order, Cart, Product | Cart resolvido em 23/10 (`2017c3b`, aponta para `product-api:8000`). Product confirmou a porta em 24/10 (product#8, `330bb05`). Order resolvido em 25/10 (order#11 fechada, `11a3e4f`) | Não — resolvido nos três e rodado em 25/10 (cart e product pelo nome `product-api:8000`) |
 | INT-010 | `shopping-cart` sem `.env.example` no repo | Cart | Resolvido (23/10, `d09fa67`) | Não |
@@ -143,8 +143,8 @@ O cart#11 segue aberto (o lado do Cart foi feito em `2bf1dfa`); com o Product at
 repetir o fluxo no Compose ou no Minikube. O estoque (`/internal/products/{id}/stock/decrement` e
 `restore`, com `Idempotency-Key`) é para o Order; não afeta o Promotion.
 
-**Consumo do cupom:** `POST /internal/coupons/{code}/consume` continua sem chamador. `order` ainda
-não faz essa chamada (promotion#50 e #52).
+**Consumo do cupom:** `POST /internal/coupons/{code}/consume` continua sem chamador por REST: o consumo do cupom
+vai pelo `OrderConfirmed` na fila (promotion#50), provado no EKS em 03/11 (promotion#52).
 
 **Recomendação, alinhada com `order/docs/adr/0002-cart-authoritative-checkout-quote.md`:** Cart
 deve compor Product + Promotion numa cotação de checkout, e Order só consumir essa cotação
@@ -168,8 +168,8 @@ diferente sem que ninguém perceba até testar de ponta a ponta.
 
 **Atualização 2026-10-24:** o Cart já envia `x-internal-secret` com o `INTERNAL_SECRET` do próprio
 ambiente (`http/promotionClient.js`) e o `k8s/create-secret.sh` dele avisa que o valor precisa ser o
-mesmo do Promotion. Falta conferir em execução que os dois valores batem e o Order, que ainda não
-chama o Promotion.
+mesmo do Promotion. Conferido em execução em 03/11 no EKS (`PUT /api/cart/coupon` aceito pelo Promotion). O Order não chama o
+Promotion por REST: o consumo do cupom vai pela fila.
 
 **Responsável:** todo o grupo.
 
@@ -285,10 +285,9 @@ serviço.
 - [x] Repetir o PROMO-002 com a chave pública e o usuário oficiais (authorization#8, promotion#49) — 02/11, no EKS
       com o ADMIN e a chave do próprio `authorization` do cluster; ver [jwt-eks-2026-11-02.md](evidencias/jwt-eks-2026-11-02.md).
 - [x] Corrigir o Ingress do promotion pra excluir /internal do acesso externo (PROMO-003) — 18/10.
-- [ ] Confirmar quem chama `/internal/discounts/calculate` e `/internal/coupons/{code}/consume`
-      (INT-002) — `calculate`: o Cart, desde 23/10 (ainda não rodado em execução); `consume`: ninguém.
-- [ ] Confirmar que `INTERNAL_SECRET` é idêntico em `order`, `shopping-cart` e `promotion`
-      (INT-006).
+- [x] Confirmar quem chama `/internal/discounts/calculate` e `/internal/coupons/{code}/consume`
+      (INT-002) — `calculate`: o Cart, desde 23/10, rodado no EKS em 03/11; `consume` por REST: ninguém (o consumo do cupom vai pelo `OrderConfirmed` na fila).
+- [x] Confirmar que `INTERNAL_SECRET` é idêntico em `shopping-cart` e `promotion` (INT-006) — 03/11, no EKS. O `order` não usa o segredo: não chama o REST. 403 sem o header ou com valor errado: `AuthenticationTest.php`.
 - [x] Fechar contrato da mensageria `OrderConfirmed` com Order (PROMO-001).
 - [ ] Implementar idempotência do consumidor de `OrderConfirmed` (PROMO-001).
 - [x] Avisar João Correa, Rodrigo e João Liz sobre a porta errada do Product em
