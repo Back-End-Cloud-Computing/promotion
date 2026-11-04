@@ -12,6 +12,7 @@ Documentação de arquitetura e planejamento do serviço. Escrita para ser lida 
 | [Mapa de issues da entrega final](issues-entrega-final.md) | O que falta de issue em cada repo e o que precisa estar pronto para a N2 rodar de ponta a ponta |
 | [Rubrica da N2 (Canvas)](rubrica-n2.md) | Critérios oficiais (R1 3, R2 4, R3 2), requisitos e como o projeto atende cada um |
 | [Guia de estudo da N2](guia-estudo-n2.md) | Os 11 serviços, auth, perguntas prováveis do professor, roteiro e pré-voo |
+| [Ensaio no EKS 03/11](evidencias/e2e-eks-2026-11-03.md) | Pedido com cupom pelo gateway (`usage_count` 0→1), CLIENTE→403, chave JWT vazia→500, idempotência e balanceamento |
 | [Evidência no EKS 27/10](evidencias/eks-2026-10-27.md) | Os 11 serviços no Amazon EKS: pods, Ingress pelo ELB, balanceamento e consumo do `OrderConfirmed` |
 | [Teste de integração 21/10](teste-integracao-2026-10.md) | Os 11 repos no Compose e no Minikube: o que sobe, o que quebra e as issues geradas |
 | [Alinhamento JWT/RS256](alinhamento-jwt-rs256.md) | ✅ Resolvido — ver [ADR 0002](adr/0002-jwt-rs256-chave-estatica.md); falta só validar com token real do Autorização |

@@ -143,7 +143,7 @@ Antes do dia: um ensaio completo com o hospedeiro, cronometrado, e o cluster sub
 /api/cart/coupon` guardam o cupom em `cart:{user}:coupon` depois que o promotion o aceita, e `GET /api/cart` sempre cota
 com ele. O desconto é distribuído nas unidades, então `discounted_price × quantity` soma o total que o Order cobra.
 O Order passou a ler o campo `coupon` e a preencher `coupon_code` (order#25, `d2bf0ef`, 03/11) e order#12 fechou com E2E no
-Minikube (`outcome=consumed`). Os pontos 2 a 4 abaixo descrevem o estado até 02/11; o E2E com cupom ainda não foi rodado no EKS.
+Minikube (`outcome=consumed`). Os pontos 2 a 4 abaixo descrevem o estado até 02/11; o E2E com cupom rodou no EKS em 03/11 ([evidência](evidencias/e2e-eks-2026-11-03.md)).
 
 Até 02/11 o cupom se perdia em quatro pontos, nesta ordem:
 
@@ -151,12 +151,12 @@ Até 02/11 o cupom se perdia em quatro pontos, nesta ordem:
    `cart:{user}` guardava só itens.
 2. **Order lendo o carrinho (resolvido em 03/11):** `CartClient` lia só `items`; agora lê `coupon` e `CartSnapshot` tem `CouponCode`.
 3. **Evento (resolvido em 03/11):** `CreateOrderHandler` passava `null` como `CouponCode`; agora passa `cart.CouponCode`.
-4. **Consumidor:** `OrderConfirmedHandler.php:63-64` devolve `NO_COUPON` quando o evento vem sem cupom (E2E de 02/11, `outcome=no_coupon`); com cupom, `outcome=consumed` e o `usage_count` sobe (Minikube, 03/11).
+4. **Consumidor:** `OrderConfirmedHandler.php:63-64` devolve `NO_COUPON` quando o evento vem sem cupom (E2E de 02/11, `outcome=no_coupon`); com cupom, `outcome=consumed` e o `usage_count` sobe (Minikube e EKS, 03/11).
 
 Também: `POST /internal/coupons/{code}/consume` existe e é testado, mas ninguém o chama; o contrato alvo com `quote_id` do
 `INTEGRATION-CONTRACTS.md` não foi implementado. O runbook do Order manda **não** apresentar uma mensagem AMQP manual com
 cupom como se viesse do Order, a menos que o E2E do EKS tenha sido rodado. Dizer a verdade na banca: o cupom vai do Cart
-ao evento e foi consumido no Minikube; no EKS isso só vale depois do ensaio.
+ao evento e foi consumido no Minikube e no EKS (03/11).
 
 ## 6. Fluxo integrado para mostrar (R3)
 
