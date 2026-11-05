@@ -12,6 +12,7 @@ Documentação de arquitetura e planejamento do serviço. Escrita para ser lida 
 | [Mapa de issues da entrega final](issues-entrega-final.md) | O que falta de issue em cada repo e o que precisa estar pronto para a N2 rodar de ponta a ponta |
 | [Rubrica da N2 (Canvas)](rubrica-n2.md) | Critérios oficiais (R1 3, R2 4, R3 3), requisitos e como o projeto atende cada um |
 | [Infra e roteiro do dia da N2](infra-eks.md) | Regras do professor (5 min, sem slides), lab de 4 h, pré-voo, roteiro e comandos `kubectl` |
+| [Roteiro da apresentação N2](roteiro-apresentacao-n2.md) | Quem fala, o que fala e o que digita em cada minuto dos 5 min, com plano B e perguntas |
 | [Guia de estudo da N2](guia-estudo-n2.md) | Os 11 serviços, auth, perguntas prováveis do professor, roteiro e pré-voo |
 | [Ensaio no EKS 03/11](evidencias/e2e-eks-2026-11-03.md) | Pedido com cupom pelo gateway (`usage_count` 0→1), CLIENTE→403, chave JWT vazia→500, idempotência e balanceamento |
 | [Evidência no EKS 27/10](evidencias/eks-2026-10-27.md) | Os 11 serviços no Amazon EKS: pods, Ingress pelo ELB, balanceamento e consumo do `OrderConfirmed` |
