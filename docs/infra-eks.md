@@ -18,14 +18,14 @@ rodado vem marcado como **não testado**. Nenhuma credencial aparece aqui.
 Os 4 itens que o professor pede para ver: aplicação no EKS, número de réplicas com escalonamento, serviços em
 linguagens diferentes e publicação e consumo no RabbitMQ.
 
-Nosso número de equipe e o horário do slot: **a confirmar** (a lista do professor usa só o número da equipe).
+**Nossa equipe: 6, sétima a apresentar, slot 19h24 a 19h33** (lista do professor).
 
 ## 2. Infra
 
 | Item | Valor |
 |---|---|
 | Conta | Learner Lab de **um** integrante (o anfitrião); o cluster pertence a essa conta |
-| Anfitrião | a definir com o grupo |
+| Anfitrião | Lucas (conta e cluster dele; também opera o teclado) |
 | Região | `us-east-1` |
 | Cluster | `ganjj`, 2 nodes `t3.large`, criado por `eks/create-cluster.sh` do `api-gateway` |
 | Aplicação | `eks/apply.sh` aplica Ingress NGINX, secrets e os 11 serviços |
@@ -48,7 +48,7 @@ Regra de conta, com `H` = início do slot da equipe:
 - a sessão cobre até `início do lab + 4h`; o slot termina em `H + 9 min`, então o lab não pode ter começado antes
   de `H + 9 min - 4h`.
 
-Exemplo: slot 19h15 a 19h24, lab iniciado entre 15h24 e 18h00. Slot 21h12: lab entre 17h21 e 19h57.
+Nosso slot (19h24 a 19h33): lab iniciado entre **15h33 e 18h09**; o ideal é perto de 17h30, com o cluster `Ready` e o pré-voo feito antes das 18h30. Outro exemplo: slot 21h12, lab entre 17h21 e 19h57.
 
 ### Acesso dos outros integrantes (hipóteses, **não testadas**)
 
@@ -108,7 +108,7 @@ kubectl logs deploy/promotion-consumer --tail=10
 ```
 
 Só `promotion` e `api-gateway` têm 2 réplicas no kit EKS (os demais ficam com 1 para caber em 2 nodes), por isso a
-escala se mostra neles. O `kubectl scale` em 3 réplicas é do ensaio de hoje em diante: **não testado** no EKS.
+escala se mostra neles. O `kubectl scale` em 3 réplicas foi testado em 05/11 (terceiro Pod `Ready` em ~19 s).
 
 O RabbitMQ não tem painel (a imagem `rabbitmq:4.1-alpine` do support não traz o plugin de management), então a
 prova é `list_queues` com consumidor, o log do `promotion-consumer` e o `usage_count` do cupom subindo 1.
