@@ -17,7 +17,7 @@ Tudo abaixo foi rodado no EKS em 05/11/2026 (cluster novo, 23 pods `Running`). O
 | João Liz | shopping-cart (Node.js/Express, Redis) | diversidade, carrinho e cupom |
 | João Correa | product, llm-provider, embedding-reranking, vector-db (Python/FastAPI; MongoDB e ChromaDB) | diversidade, produto |
 
-**Equipe 6, slot 19h24 a 19h33. Operador do teclado e anfitrião do cluster: Lucas.** Quem fala não digita; avisa "próximo" e o operador aperta
+**Equipe 10, slot 20h54 a 21h03. Operador do teclado e anfitrião do cluster: Lucas.** Quem fala não digita; avisa "próximo" e o operador aperta
 Enter. O terminal projetado tem fonte grande, `ELB` exportado e o kubeconfig do cluster ativo.
 
 ## 2. Linha do tempo (5:00)
@@ -57,7 +57,7 @@ kubectl get nodes
 kubectl get deploy,pods,svc
 ```
 
-Fala: "Somos a equipe 6. A solução é uma loja em microsserviços: 11 serviços, 5 integrantes, todos em
+Fala: "Somos a equipe 10. A solução é uma loja em microsserviços: 11 serviços, 5 integrantes, todos em
 container e rodando num cluster Amazon EKS com 2 nodes. A entrada é um NGINX Ingress que aponta para o
 api-gateway, e o gateway roteia para os serviços. Aqui estão os Deployments, os Pods e os Services."
 
