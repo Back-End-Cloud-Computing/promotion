@@ -18,7 +18,7 @@ rodado vem marcado como **não testado**. Nenhuma credencial aparece aqui.
 Os 4 itens que o professor pede para ver: aplicação no EKS, número de réplicas com escalonamento, serviços em
 linguagens diferentes e publicação e consumo no RabbitMQ.
 
-**Nossa equipe: 6, sétima a apresentar, slot 19h24 a 19h33** (lista do professor).
+**Nossa equipe: 10, 17ª a apresentar, slot 20h54 a 21h03** (lista do professor).
 
 ## 2. Infra
 
@@ -48,7 +48,7 @@ Regra de conta, com `H` = início do slot da equipe:
 - a sessão cobre até `início do lab + 4h`; o slot termina em `H + 9 min`, então o lab não pode ter começado antes
   de `H + 9 min - 4h`.
 
-Nosso slot (19h24 a 19h33): lab iniciado entre **15h33 e 18h09**; o ideal é perto de 17h30, com o cluster `Ready` e o pré-voo feito antes das 18h30. Outro exemplo: slot 21h12, lab entre 17h21 e 19h57.
+Nosso slot (20h54 a 21h03): lab iniciado entre **17h03 e 19h39**; o ideal é perto de 19h00, com o cluster `Ready` e o pré-voo feito antes das 20h30. Outro exemplo: slot 21h12, lab entre 17h21 e 19h57.
 
 ### Acesso dos outros integrantes (hipóteses, **não testadas**)
 
