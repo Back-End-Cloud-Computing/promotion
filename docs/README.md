@@ -10,12 +10,7 @@ Documentação de arquitetura e planejamento do serviço. Escrita para ser lida 
 | [Contrato da API](contrato-api.md) | Referência de endpoints para quem vai **consumir** este serviço (Carrinho, Pedido, Gateway) |
 | [Regras de negócio](regras-de-negocio.md) | As regras de desconto e cupom, com os casos de teste que provam cada uma |
 | [Mapa de issues da entrega final](issues-entrega-final.md) | O que falta de issue em cada repo e o que precisa estar pronto para a N2 rodar de ponta a ponta |
-| [Rubrica da N2 (Canvas)](rubrica-n2.md) | Critérios oficiais (R1 3, R2 4, R3 3), requisitos e como o projeto atende cada um |
-| [Infra e roteiro do dia da N2](infra-eks.md) | Regras do professor (5 min, sem slides), lab de 4 h, pré-voo, roteiro e comandos `kubectl` |
-| [Roteiro da apresentação N2](roteiro-apresentacao-n2.md) | Quem fala, o que fala e o que digita em cada minuto dos 5 min, com plano B e perguntas |
-| [Guia de estudo da N2](guia-estudo-n2.md) | Os 11 serviços, auth, perguntas prováveis do professor, roteiro e pré-voo |
-| [Ensaio no EKS 03/11](evidencias/e2e-eks-2026-11-03.md) | Pedido com cupom pelo gateway (`usage_count` 0→1), CLIENTE→403, chave JWT vazia→500, idempotência e balanceamento |
-| [Evidência no EKS 27/10](evidencias/eks-2026-10-27.md) | Os 11 serviços no Amazon EKS: pods, Ingress pelo ELB, balanceamento e consumo do `OrderConfirmed` |
+| [Docs da N2 e do EKS (no api-gateway)](https://github.com/Back-End-Cloud-Computing/api-gateway/blob/main/docs/README.md) | Rubrica, infra e roteiro do dia, roteiro da apresentação, guia de estudo e evidências no EKS, que cobrem os 11 serviços |
 | [Teste de integração 21/10](teste-integracao-2026-10.md) | Os 11 repos no Compose e no Minikube: o que sobe, o que quebra e as issues geradas |
 | [Alinhamento JWT/RS256](alinhamento-jwt-rs256.md) | ✅ Resolvido — ver [ADR 0002](adr/0002-jwt-rs256-chave-estatica.md); falta só validar com token real do Autorização |
 
@@ -30,8 +25,8 @@ Cada fase é entregável por si só e está ancorada numa data do cronograma da 
 | 2 | [Docker](fases/fase-2-docker.md) | após 18/08 | Imagem, compose, health checks |
 | 3 | [Kubernetes](fases/fase-3-kubernetes.md) | após 25/08 | Manifests, probes, secrets |
 | 4 | [Integração e mensageria](fases/fase-4-integracao.md) | após 15/09 | REST interno + RabbitMQ |
-| 5 | [Segurança e observabilidade](fases/fase-5-seguranca.md) | após 20/10 | JWT alinhado, métricas, Helm — extra; fora da rubrica do Canvas (ver [rubrica-n2.md](rubrica-n2.md)) |
-| N2 | [Roteiro da apresentação](apresentacao-n2.md) | 10/11/2026 | O que mostrar, em que ordem, e o que responder |
+| 5 | [Segurança e observabilidade](fases/fase-5-seguranca.md) | após 20/10 | JWT alinhado, métricas, Helm — extra; fora da rubrica do Canvas (ver [rubrica-n2.md](https://github.com/Back-End-Cloud-Computing/api-gateway/blob/main/docs/rubrica-n2.md)) |
+| N2 | [Roteiro da apresentação](https://github.com/Back-End-Cloud-Computing/api-gateway/blob/main/docs/apresentacao-n2.md) | 10/11/2026 | O que mostrar, em que ordem, e o que responder |
 
 ## Datas que não se movem
 
@@ -46,7 +41,7 @@ Cada fase é entregável por si só e está ancorada numa data do cronograma da 
 | 20/10 | Aula de Segurança com JWT |
 | 27/10 | Aula de Helm |
 | 03/11 | Aula de Observabilidade |
-| **10/11/2026 (terça)** | **N2 — apresentação em equipe, 40% da nota** (tarefa "Avaliação Somativa N2" no Canvas, 10 pontos, implantação obrigatória no Amazon EKS; ver [rubrica-n2.md](rubrica-n2.md)) |
+| **10/11/2026 (terça)** | **N2 — apresentação em equipe, 40% da nota** (tarefa "Avaliação Somativa N2" no Canvas, 10 pontos, implantação obrigatória no Amazon EKS; ver [rubrica-n2.md](https://github.com/Back-End-Cloud-Computing/api-gateway/blob/main/docs/rubrica-n2.md)) |
 
 ## Pendências fora do código
 
