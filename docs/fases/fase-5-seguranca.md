@@ -130,7 +130,7 @@ serviço e o porquê de cada uma estão em [arquitetura.md](../arquitetura.md) �
   o `curl` com 404 no cluster fica para o ensaio
 - [x] `APP_DEBUG=false` fora do local (`k8s/configmap.yaml`)
 - [x] Métricas expostas (`app/Support/Metrics.php`, coberto por `tests/Feature/MetricsTest.php`)
-- [x] Decisões arquiteturais prontas para defesa oral (ver [apresentacao-n2.md](../apresentacao-n2.md))
+- [x] Decisões arquiteturais prontas para defesa oral (ver [apresentacao-n2.md](https://github.com/Back-End-Cloud-Computing/api-gateway/blob/main/docs/apresentacao-n2.md))
 
 ## Fecha o projeto
 

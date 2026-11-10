@@ -2,7 +2,7 @@
 
 Levantamento de **20/10/2026** feito com `gh`, Docker Hub e clones limpos de cada repo (branch `main`), com as seções 2 e 3 atualizadas em **26/10/2026** contra o `main` de cada repo, as issues e o Docker Hub. Responde duas perguntas: o que falta de issue em cada repositório e o que precisa estar pronto para a apresentação rodar de ponta a ponta.
 
-Rubrica da N2: a do **Canvas**, em [`rubrica-n2.md`](rubrica-n2.md) (desde 27/10/2026). **R1** microsserviços, duas linguagens e dois bancos (3), **R2** Amazon EKS com Services, Service Discovery, Ingress e balanceamento (4), **R3** REST e RabbitMQ em fluxo funcional (2). A rubrica do Plano de Ensino (R1 4,0 · R2 3,0 · R3 3,0), usada nas seções abaixo até 26/10, foi substituída. É em equipe, para a sala toda, sem frontend.
+Rubrica da N2: a do **Canvas**, em [`rubrica-n2.md`](https://github.com/Back-End-Cloud-Computing/api-gateway/blob/main/docs/rubrica-n2.md) (desde 27/10/2026). **R1** microsserviços, duas linguagens e dois bancos (3), **R2** Amazon EKS com Services, Service Discovery, Ingress e balanceamento (4), **R3** REST e RabbitMQ em fluxo funcional (2). A rubrica do Plano de Ensino (R1 4,0 · R2 3,0 · R3 3,0), usada nas seções abaixo até 26/10, foi substituída. É em equipe, para a sala toda, sem frontend.
 
 > As issues dos repos dos outros integrantes foram **criadas por mim com o dono como assignee**, a pedido do Lucas (seção 4). Nenhum código ou texto de issue deles foi editado; as únicas mudanças em issues existentes foram os labels de origem no `support` (#1 a #14) e o fechamento das 3 duplicadas que eu mesmo criei lá.
 
@@ -109,7 +109,7 @@ Conferido com `ganjj-check --all` (janela de 26/10 12:48Z a 02/11 16:05Z).
 | Entregue na janela | Helm em todos os serviços (cart#5, gateway PR #37); dashboards JSON (promotion #47, gateway #12); consumer RabbitMQ do `promotion` (#51); publisher `OrderConfirmed` (order#21) e `OrderCreated` (support PR #22); rotas do Cart e do Product alinhadas (order#18, PR #19); timeout do Cart (cart#12); chave pública e login ADMIN do `authorization` (authorization#8) |
 | Desbloqueado, nosso | `promotion` #49 e `api-gateway` #13 (checklists PROMO-002 e GW-002 com as credenciais do Eduardo) |
 | Entregue em 03/11 | Cart persiste o cupom (shopping-cart#13) e o Order o lê e envia `coupon_code` (order#25); E2E no Minikube com `outcome=consumed`, order#12 fechada |
-| Rodado no EKS em 02/11 | pedido pelo gateway 201 e idempotente, e-mail único no Mailpit, `OrderConfirmed` consumido (`no_coupon`), filas e DLQs zeradas; ver [evidência](evidencias/e2e-eks-2026-11-02.md) |
+| Rodado no EKS em 02/11 | pedido pelo gateway 201 e idempotente, e-mail único no Mailpit, `OrderConfirmed` consumido (`no_coupon`), filas e DLQs zeradas; ver [evidência](https://github.com/Back-End-Cloud-Computing/api-gateway/blob/main/docs/evidencias/e2e-eks-2026-11-02.md) |
 | Pendente | README e docs de RabbitMQ do `support` (#22); revisão de authorization PR #13 e support PR #24 |
 | Ensaio | `promotion` #54, `api-gateway` #14, order#8, support#14, authorization#7 (até 07/11); shopping-cart#7 foi fechada em 28/10 sem registro do ensaio |
 | Processo | shopping-cart: 5 commits direto na `main` (28/10), sem PR |

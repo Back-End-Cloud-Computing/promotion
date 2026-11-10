@@ -28,4 +28,4 @@ php artisan serve
 
 ## Documentação
 
-A documentação de arquitetura e o plano por fases estão em `docs/`. A rubrica da N2 e como o projeto atende cada critério estão em [`docs/rubrica-n2.md`](docs/rubrica-n2.md).
+A documentação de arquitetura e o plano por fases estão em `docs/`. Os docs da N2 e do Amazon EKS (infra e roteiro do dia, guia de estudo, evidências), que cobrem os 11 serviços, ficam no [`api-gateway/docs/`](https://github.com/Back-End-Cloud-Computing/api-gateway/blob/main/docs/README.md). A rubrica da N2 e como o projeto atende cada critério estão em [`docs/rubrica-n2.md`](https://github.com/Back-End-Cloud-Computing/api-gateway/blob/main/docs/rubrica-n2.md).
